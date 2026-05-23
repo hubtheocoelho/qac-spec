@@ -30,7 +30,7 @@ A qualified commit (QAC-compliant) fills that gap with the minimum information n
 
 ## Format
 
-QAC uses git trailers — a native git mechanism for structured metadata in the commit footer. Trailers are `Key: value` pairs separated from the subject line by a blank line, queryable via `git log --trailer=<key>` without custom tooling.
+QAC uses git trailers — a native git mechanism for structured metadata in the commit footer. Trailers are `Key: value` pairs separated from the subject line by a blank line, queryable via `git log --grep` and `%(trailers:key=<K>)` format without custom tooling.
 
 The subject line remains unchanged, following the project's commit convention (Conventional Commits, or any other). QAC does not interfere with the subject line — the traceability trailers live exclusively in the footer.
 
@@ -102,20 +102,22 @@ This avoids repetition in the history and preserves the self-contained property 
 
 ## Native Querying
 
-Trailers are queryable via native git commands, without scripts or additional tools:
+Trailers are queryable via native git commands, without scripts or additional tools.
+
+Filtering uses `--grep` with extended regex anchored to the start of the trailer line (`^`). Extraction uses the `%(trailers:key=<K>)` format placeholder, available since git 2.9. The `valueonly` option requires git 2.22.
 
 ```bash
 # List all autonomous commits
-git log --trailer="Mode: autonomous"
+git log --grep="^Mode: autonomous" --extended-regexp
 
 # List all commits from a specific agent
-git log --trailer="Agent: agent-ai"
+git log --grep="^Agent: agent-ai" --extended-regexp
 
 # Extract the Why from all commits with trailers
-git log --format="%(trailers:key=Why)"
+git log --format="%(trailers:key=Why)" | grep -v "^$"
 
 # Autonomous commits from the last month
-git log --since="1 month ago" --trailer="Mode: autonomous"
+git log --since="1 month ago" --grep="^Mode: autonomous" --extended-regexp
 ```
 
 ## Examples
