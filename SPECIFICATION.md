@@ -60,6 +60,33 @@ What: <semantic summary>
 Why: <condition + impact>
 ```
 
+## Implementation
+
+QAC defines the schema — the four keys, their meaning, their order, and the allowed values for `Mode`. The creation mechanism is the developer's choice. Both approaches produce an identical commit object in git:
+
+**Via `git commit --trailer=`** (git 2.32+) — git handles trailer formatting natively:
+
+```bash
+git commit -m "feat(auth): add token refresh endpoint" \
+  --trailer="Agent: claude-code" \
+  --trailer="Mode: hitl" \
+  --trailer="What: add POST /auth/refresh with JWT rotation and 7-day sliding window" \
+  --trailer="Why: sessions expired silently with no renewal path, forcing users to re-authenticate on every visit"
+```
+
+**Via commit message text** (any git version) — trailers written directly in the description:
+
+```
+feat(auth): add token refresh endpoint
+
+Agent: claude-code
+Mode: hitl
+What: add POST /auth/refresh with JWT rotation and 7-day sliding window
+Why: sessions expired silently with no renewal path, forcing users to re-authenticate on every visit
+```
+
+Both approaches produce the same trailer block in the commit footer. The enforcement hook, querying commands, and format placeholders work identically regardless of which was used.
+
 ## Granularity
 
 All trailers describe the individual commit, not the card or feature as a whole. In a sequence of atomic commits related to the same card, each commit has its own Why, reflecting the specific condition that commit resolves.
