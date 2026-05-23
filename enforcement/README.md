@@ -1,6 +1,6 @@
 # QAC Enforcement — commit-msg hook
 
-A git hook that validates QAC trailers on agent commits before they land in history.
+A git hook that validates QAC trailers on agent commits before they land in history. Works regardless of how the trailers were created — via `git commit --trailer=` or written directly in the commit message text.
 
 ## Behavior
 
