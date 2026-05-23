@@ -13,6 +13,20 @@ Use this skill every time the agent is about to commit. Do not use for human com
 
 ## Commit structure
 
+QAC defines the schema. The creation mechanism is your choice — both produce an identical commit:
+
+**Via `git commit --trailer=`** (git 2.32+):
+
+```bash
+git commit -m "<type>(<scope>): <description>" \
+  --trailer="Agent: <agent name>" \
+  --trailer="Mode: <hitl | autonomous>" \
+  --trailer="What: <semantic summary of what was done>" \
+  --trailer="Why: <condition that existed + impact it caused>"
+```
+
+**Via commit message text** (any git version):
+
 ```
 <type>(<scope>): <description>
 
@@ -58,7 +72,19 @@ Check:
 - [ ] Why does not reference external artifacts
 - [ ] Why focuses on the problem, not the solution
 
-## Example
+## Examples
+
+Via `--trailer=`:
+
+```bash
+git commit -m "refactor(hooks): debounce localStorage writes in useBoard" \
+  --trailer="Agent: claude-code" \
+  --trailer="Mode: hitl" \
+  --trailer="What: add 300ms debounce to localStorage.setItem calls and extract load logic to separate function" \
+  --trailer="Why: every state change triggered immediate localStorage write causing excessive I/O syscalls during drag operations"
+```
+
+Via commit message text:
 
 ```
 refactor(hooks): debounce localStorage writes in useBoard
