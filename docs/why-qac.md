@@ -52,7 +52,7 @@ After several iterations cutting what git already provides natively (timestamp, 
 
 **Why** — the condition that existed and the impact it caused. Not the "why of the card" or the "why of the feature" — the why of this specific commit. In a card with 10 atomic commits, each one has its own Why, because each one resolves a different condition.
 
-The format uses git trailers — a native git mechanism for structured metadata in the commit footer. No custom parser needed, no dedicated CLI, no extension. `git log --trailer=Mode` already filters all commits by mode of operation.
+The format uses git trailers — a native git mechanism for structured metadata in the commit footer. No custom parser needed, no dedicated CLI, no extension. `git log --grep="^Mode: autonomous" --extended-regexp` already filters all commits by mode of operation.
 
 ## In practice
 
@@ -131,16 +131,16 @@ Without additional tools:
 
 ```bash
 # All autonomous commits
-git log --trailer="Mode: autonomous"
+git log --grep="^Mode: autonomous" --extended-regexp
 
 # All commits from a specific agent
-git log --trailer="Agent: nexus-ai"
+git log --grep="^Agent: nexus-ai" --extended-regexp
 
 # Extract the Why from all commits
-git log --format="%(trailers:key=Why)"
+git log --format="%(trailers:key=Why)" | grep -v "^$"
 
 # Autonomous commits from the last month
-git log --since="1 month ago" --trailer="Mode: autonomous"
+git log --since="1 month ago" --grep="^Mode: autonomous" --extended-regexp
 ```
 
 This is what makes git trailers superior to any custom format in the body: the query already exists, it is native, and it works in any git repository without setup.
