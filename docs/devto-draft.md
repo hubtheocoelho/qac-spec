@@ -30,7 +30,7 @@ The trade-offs are significant. It does not identify which agent made the commit
 
 In March 2026, "Lore: Repurposing Git Commit Messages as a Structured Knowledge Protocol for AI Coding Agents" was published on arXiv. The diagnosis is accurate: every commit discards the reasoning behind the decision — what the authors call the "Decision Shadow". Lore proposes native git trailers to preserve constraints, rejected alternatives, confidence level, blast radius, reversibility, directives, and test coverage. Nine optional trailers, with a dedicated CLI for querying.
 
-Lore is designed for architectural decisions at the implementation level, where the depth of each field is justified. In projects with atomic commits — where each commit is small and focused — most Lore fields would be empty or repetitive on the majority of commits. The dedicated CLI introduces an adoption dependency that does not exist in the standard git toolchain.
+Lore is designed for architectural decisions at the implementation level, where the depth of each field is justified. In projects with atomic commits — where each commit is small and focused — most Lore fields would be empty or repetitive on the majority of commits. The dedicated CLI introduces an adoption dependency that does not exist in the standard git toolchain. And because Lore's keys are not standardized across projects, every repository requires its own query configuration — there are no portable patterns.
 
 Neither approach addresses a question that is increasingly relevant in AI-assisted development: **was this change made autonomously by the agent, or under human supervision?**
 
@@ -56,11 +56,23 @@ Git already provides natively: timestamp, author, diff, and the list of changed 
 
 **Why** — the condition that existed before the change and the impact that condition caused. Not the "why of the feature" but the why of this specific commit. In a sequence of atomic commits on the same card, each commit has its own Why describing the specific condition it resolves.
 
-The format uses git trailers — a native mechanism for structured key-value pairs in the commit footer, queryable with `git log` without custom tooling or extensions.
+The format uses git trailers — a native mechanism for structured key-value pairs in the commit footer. QAC defines exactly four keys. Because the keys are fixed by the specification, the same query patterns work on any QAC-compliant repository without reading its documentation first.
 
 ## In practice
 
-A complete QAC commit:
+QAC defines the schema — the four keys, their meaning, and their rules. The creation mechanism is your choice. Both approaches produce an identical commit object:
+
+Via `git commit --trailer=` (git 2.32+):
+
+```bash
+git commit -m "feat(auth): add token refresh endpoint" \
+  --trailer="Agent: cursor-ai" \
+  --trailer="Mode: hitl" \
+  --trailer="What: add POST /auth/refresh with JWT rotation and 7-day sliding window" \
+  --trailer="Why: sessions expired silently with no renewal path, forcing users to re-authenticate on every visit"
+```
+
+Via commit message text (any git version):
 
 ```
 feat(auth): add token refresh endpoint
@@ -129,9 +141,9 @@ The effect of the change, not the files touched. Complements the subject line, w
 ### Why
 The condition that existed and its negative impact, expressed in a single statement. Focus on the problem, not the solution — the solution is in the What.
 
-## Native querying
+## Portable querying
 
-Git trailers are queryable with standard git commands, without additional tooling:
+QAC-compliant repositories are queryable with standard git commands, without additional tooling. The portability comes from the schema: because `Agent`, `Mode`, `What`, and `Why` are fixed keys defined by the spec — not chosen by each team — the same patterns work on any QAC-compliant repository.
 
 ```bash
 # All autonomous commits
@@ -146,6 +158,8 @@ git log --format="%(trailers:key=Why)" | grep -v "^$"
 # Autonomous commits from the last month
 git log --since="1 month ago" --grep="^Mode: autonomous" --extended-regexp
 ```
+
+Teams that adopt git trailers without a shared specification produce divergent key names across repositories — `Agent`, `AI-Agent`, `by`, `authored-by`. Each divergence requires custom scripts to query. QAC eliminates that: encounter any QAC-compliant repository and the queries above work immediately.
 
 ## Field count rationale
 
