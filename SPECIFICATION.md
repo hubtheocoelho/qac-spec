@@ -2,19 +2,23 @@
 
 ## Specification v1.0
 
-QAC is a commit message specification for actions performed by AI agents in code repositories. It defines a structured format based on native git trailers that qualifies each commit with traceability metadata: who executed it, under which mode of operation, what was done, and why.
+QAC is a commit message specification for AI agent actions in code repositories. It defines a fixed schema of four git trailers — `Agent`, `Mode`, `What`, `Why` — that qualifies each commit with traceability metadata: who executed it, under which mode of operation, what was done, and why.
+
+The schema is what distinguishes QAC from ad-hoc trailer usage. Any team can add trailers to commits; teams that choose their own key names produce repositories that are not interoperable with each other. QAC fixes the keys, their order, and the allowed values for `Mode`, making QAC-compliant repositories queryable with the same patterns regardless of the team, tool, or agent that produced them.
 
 ## Problem
 
 AI agents execute actions in code repositories: they create files, modify configurations, refactor structures. These actions generate commits in the git history. A conventional commit records only what changed (diff) and a short description (subject line), but does not preserve the reasoning behind the action.
 
-This creates three gaps:
+This creates four gaps:
 
 1. **Traceability** — a human auditing the agent's work cannot distinguish whether an action was requested, autonomous, or reactive, nor what problem motivated the change.
 
 2. **Continuity** — a future agent reading the repository history needs to interpret diffs to reconstruct the project context. Large diffs consume context window and are not always semantically clear — the agent sees the changed lines but does not understand the intent. This leads to hallucination, drift, and excessive token consumption.
 
 3. **Tacit knowledge** — humans compensate for ambiguous commits with memory and implicit context. AI agents have no access to that knowledge. Every ambiguous commit is a context black hole that accumulates and degrades the quality of the agent's work.
+
+4. **Schema fragmentation** — teams that adopt git trailers without a shared specification produce divergent schemas. `Agent`, `AI-Agent`, `by`, `authored-by` all attempt to record the same information with different keys. Without a standard, every repository requires custom inspection to determine its query patterns, and cross-repository analysis is not possible.
 
 ## Rationale
 
@@ -26,11 +30,11 @@ Traceability of AI agent actions in code repositories requires that three questi
 
 Git already provides natively: timestamp, author, diff, and changed files. What is missing is the intent layer — the reasoning that connects the situation to the problem and the problem to the action.
 
-A qualified commit (QAC-compliant) fills that gap with the minimum information necessary and the maximum value for human and agent consumption.
+A QAC-compliant commit fills that gap with the minimum information necessary. Because the schema is fixed by the specification — not by the team, not by the agent, not by the toolchain — any developer or agent who knows the QAC spec can read and query any QAC-compliant repository using the same commands, without inspecting the project's own documentation first.
 
 ## Format
 
-QAC uses git trailers — a native git mechanism for structured metadata in the commit footer. Trailers are `Key: value` pairs separated from the subject line by a blank line, queryable via `git log --grep` and `%(trailers:key=<K>)` format without custom tooling.
+QAC uses git trailers — a native git mechanism for structured key-value pairs in the commit footer, separated from the subject line by a blank line. The specification defines exactly four trailer keys. No custom tooling is required to read or write them; they are plain text in the commit message.
 
 The subject line remains unchanged, following the project's commit convention (Conventional Commits, or any other). QAC does not interfere with the subject line — the traceability trailers live exclusively in the footer.
 
@@ -81,10 +85,9 @@ This avoids repetition in the history and preserves the self-contained property 
 
 ### Mode
 
-- Indicates the mode of operation under which the commit was generated
 - `hitl` — human-in-the-loop: user requested or approved the action
 - `autonomous` — agent decided and executed without human intervention
-- Enables analysis of how AI is being used in the project and the degree of autonomy in changes
+- Only these two values are valid; no extensions or variants
 
 ### What
 
@@ -100,25 +103,29 @@ This avoids repetition in the history and preserves the self-contained property 
 - Never reference personal artifacts, numbered steps from local plans, or information that exists only in the chat session
 - Focus on the problem, not the solution (the solution is the What trailer)
 
-## Native Querying
+## Portable Querying
 
-Trailers are queryable via native git commands, without scripts or additional tools.
+Git trailers are queryable using `git log`'s native `--grep` flag and `%(trailers:key=<K>)` format placeholder. No additional tooling, scripts, or extensions are required.
 
-Filtering uses `--grep` with extended regex anchored to the start of the trailer line (`^`). Extraction uses the `%(trailers:key=<K>)` format placeholder, available since git 2.9. The `valueonly` option requires git 2.22.
+The portability guarantee comes from the schema, not from a dedicated git feature. Because QAC fixes the trailer keys and the exact values for `Mode`, the same `--grep` pattern works identically on any QAC-compliant repository:
 
 ```bash
-# List all autonomous commits
+# All autonomous commits
 git log --grep="^Mode: autonomous" --extended-regexp
 
-# List all commits from a specific agent
+# All commits from a specific agent
 git log --grep="^Agent: agent-ai" --extended-regexp
 
-# Extract the Why from all commits with trailers
+# Extract the Why from all agent commits
 git log --format="%(trailers:key=Why)" | grep -v "^$"
 
 # Autonomous commits from the last month
 git log --since="1 month ago" --grep="^Mode: autonomous" --extended-regexp
 ```
+
+Teams that adopt git trailers without a schema standard produce divergent key names across repositories. QAC eliminates that divergence: the keys are defined by the spec, not by each team independently. A developer or agent encountering a QAC-compliant repository for the first time can query it immediately, without reading its documentation.
+
+**Version requirements:** `%(trailers:key=<K>)` requires git 2.9. The `valueonly` format option requires git 2.22.
 
 ## Examples
 
@@ -155,10 +162,10 @@ Why: no inclusion mode declared, IDE does not load the steering automatically wi
 
 QAC was developed considering three emerging references in the AI agent traceability ecosystem:
 
-- **Lore Protocol** (arXiv:2603.15566, March 2026) — proposes git trailers as a structured knowledge protocol to preserve the "Decision Shadow". Uses 9 optional trailers including Constraint, Rejected, Confidence, Scope-risk, Reversibility and Directive. Oriented towards architectural decisions at the implementation level.
+- **Lore Protocol** (arXiv:2603.15566, March 2026) — proposes git trailers as a structured knowledge protocol to preserve the "Decision Shadow". Uses 9 optional trailers with team-defined keys including Constraint, Rejected, Confidence, Scope-risk, Reversibility and Directive. Because keys are not standardized across projects, Lore repositories require per-project query configuration. Oriented towards architectural decisions at the implementation level.
 
-- **Agentic Commits** (v1.0.0, January 2026) — extends Conventional Commits with the format `type(scope): what (why) → next` in the subject line. Does not identify the agent, does not distinguish mode of operation, and compresses everything into a single line.
+- **Agentic Commits** (v1.0.0, January 2026) — extends Conventional Commits with the format `type(scope): what (why) → next` in the subject line. Does not identify the agent, does not distinguish mode of operation, and produces no structured trailer schema — eliminating the possibility of trailer-based querying entirely.
 
 - **GitAgentProtocol / Open GAP** (2.7k stars, April 2026) — git-native standard for defining agents as repositories. Does not address commit messages, but validates the ecosystem of agent traceability via git as a market trend.
 
-QAC positions itself between Lore (complete but heavy for atomic commits) and Agentic Commits (lightweight but without agent traceability or mode of operation), focusing on practical traceability and AI usage analysis in projects.
+QAC positions itself between Lore (deep but without a fixed schema — heavy for atomic commits and non-portable across repositories) and Agentic Commits (lightweight but with no agent attribution, no mode of operation, and no queryable structure), with a fixed four-key schema that is both minimal enough for atomic commits and specific enough to enable portable querying across any compliant repository.
