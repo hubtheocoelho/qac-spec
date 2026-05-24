@@ -72,10 +72,12 @@ The aggregate of Why trailers over a codebase's lifetime is a map of its pain po
 
 The most direct application of structured trailers is context reconstruction — understanding the history of a file or the project without reading diffs.
 
-**File-level:** every decision made on a specific file, in order:
+**File-level:** every agent decision made on a specific file, in order:
 
 ```bash
-git log --follow --format="%s%nWhat: %(trailers:key=What,valueonly)%nWhy: %(trailers:key=Why,valueonly)%n" -- src/auth/middleware.ts
+git log --follow --grep="^Agent:" --extended-regexp \
+  --format="%s%nWhat: %(trailers:key=What,valueonly)%nWhy: %(trailers:key=Why,valueonly)%n" \
+  -- src/auth/middleware.ts
 ```
 
 The output is a readable changelog for that file: every commit that touched it, what the change accomplished, and what condition motivated it. A developer inheriting ownership of a module can run this once and understand the full decision history without opening a single diff.
@@ -83,7 +85,8 @@ The output is a readable changelog for that file: every commit that touched it, 
 **Project-level:** reconstructing recent context for a new agent session:
 
 ```bash
-git log --since="1 month ago" --format="%(trailers:key=What,valueonly)%nWhy: %(trailers:key=Why,valueonly)%n---" | grep -v "^$"
+git log --since="1 month ago" --grep="^Agent:" --extended-regexp \
+  --format="%(trailers:key=What,valueonly)%nWhy: %(trailers:key=Why,valueonly)%n---" | grep -v "^$"
 ```
 
 A new agent session starting on a repository with QAC history can run this and reconstruct the project's recent evolution in a fraction of the tokens required to read the same period's diffs. A diff for a refactor that touches 20 files may be thousands of lines; the What and Why for that same commit are two sentences. Across a month of active development, this difference is the gap between a session that starts with full project context and one that starts blind.
@@ -147,7 +150,7 @@ The data exists only if it was recorded at commit time. After the fact, there is
 
 The practical value of QAC scales with the consistency of adoption. A repository where half the agent commits have trailers and half do not produces an incomplete audit trail — useful, but not reliable for the workflows described here.
 
-The enforcement hook at [github.com/hubtheocoelho/qac-spec](https://github.com/hubtheocoelho/qac-spec) addresses this: it validates all four trailers before any agent commit is recorded, rejecting commits that are missing fields or have invalid Mode values. Combined with the skill file that instructs agents to generate trailers automatically, the overhead of adoption is minimal.
+The enforcement hook at [github.com/hubtheocoelho/qac-spec](https://github.com/hubtheocoelho/qac-spec) addresses this: it validates all four trailers before any agent commit is recorded, rejecting commits that are missing fields or have invalid Mode values. Combined with provider-specific skill files for Claude Code, Cursor, Kiro, GitHub Copilot, and Windsurf that instruct agents to generate trailers automatically, the overhead of adoption is minimal.
 
 For teams already using Conventional Commits, QAC adds four lines per commit. For teams that are not, QAC is compatible with any subject line convention — the trailers live in the footer and do not touch the subject line format.
 

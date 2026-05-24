@@ -171,7 +171,7 @@ The design principle for QAC is different: include only fields that carry inform
 
 QAC was developed to address a practical need: tracing what AI agents were doing in a repository, with enough context to audit their decisions. The specification is published and open for adoption at [github.com/hubtheocoelho/qac-spec](https://github.com/hubtheocoelho/qac-spec).
 
-The repository includes a commit-msg hook that validates all four trailers before a commit is recorded, and a skill file that instructs agents to generate QAC-compliant commits automatically — compatible with Claude Code, Cursor, Kiro, and any agent that reads Markdown instruction files.
+The repository includes a commit-msg hook installable with a single command, and provider-specific skill files for Claude Code, Cursor, Kiro, GitHub Copilot, and Windsurf that instruct agents to generate QAC-compliant commits automatically.
 
 Four extra lines per commit. The traceability benefit is proportional to the consistency of adoption.
 
