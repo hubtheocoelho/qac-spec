@@ -26,14 +26,22 @@ Then add to `CLAUDE.md`:
 
 ### Cursor
 
-Copy the rule file into your project:
+Cursor supports two formats. Use whichever matches your project setup:
+
+**New format** — `.cursor/rules/*.mdc` (Cursor 0.44+):
 
 ```bash
 mkdir -p .cursor/rules
 cp path/to/qac-spec/skill/providers/cursor.mdc .cursor/rules/qac-commits.mdc
 ```
 
-The rule uses `alwaysApply: true` — it activates on every interaction without configuration.
+**Legacy format** — `.cursorrules` in the project root:
+
+```bash
+cp path/to/qac-spec/skill/providers/cursorrules.md .cursorrules
+```
+
+Both use `alwaysApply: true` behavior — the rule activates on every interaction without additional configuration.
 
 ### Kiro
 
@@ -71,7 +79,8 @@ Any agent that reads Markdown instruction files can use `skill/SKILL.md` directl
 | File | Tool | Activation |
 |------|------|------------|
 | `providers/claude-code.md` | Claude Code | via CLAUDE.md @-import |
-| `providers/cursor.mdc` | Cursor | `alwaysApply: true` |
+| `providers/cursor.mdc` | Cursor (0.44+) | `.cursor/rules/`, `alwaysApply: true` |
+| `providers/cursorrules.md` | Cursor (legacy) | `.cursorrules` at project root |
 | `providers/kiro.md` | Kiro | `inclusion: always` |
 | `providers/copilot.md` | GitHub Copilot | append to copilot-instructions.md |
 | `providers/windsurf.md` | Windsurf | append to .windsurfrules |

@@ -37,7 +37,8 @@ All four are mandatory on every agent commit. Absence of trailers signals a huma
 | Tool | Step |
 |------|------|
 | **Claude Code** | add `@skill/providers/claude-code.md` to `CLAUDE.md` |
-| **Cursor** | copy `skill/providers/cursor.mdc` → `.cursor/rules/qac-commits.mdc` |
+| **Cursor** (0.44+) | copy `skill/providers/cursor.mdc` → `.cursor/rules/qac-commits.mdc` |
+| **Cursor** (legacy) | copy `skill/providers/cursorrules.md` → `.cursorrules` |
 | **Kiro** | copy `skill/providers/kiro.md` → `.kiro/steering/qac-commits.md` |
 | **GitHub Copilot** | append `skill/providers/copilot.md` to `.github/copilot-instructions.md` |
 | **Windsurf** | append `skill/providers/windsurf.md` to `.windsurfrules` |
