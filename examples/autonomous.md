@@ -36,7 +36,7 @@ Why: api client omitted content-type header, causing 415 Unsupported Media Type 
 
 ```bash
 # Audit all autonomous commits in the last 30 days
-git log --since="30 days ago" --trailer="Mode: autonomous"
+git log --since="30 days ago" --grep="^Mode: autonomous" --extended-regexp
 ```
 
 This matters for code review, incident response, and compliance — any context where knowing the degree of human oversight changes how the change is evaluated.
