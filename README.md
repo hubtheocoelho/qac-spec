@@ -51,20 +51,20 @@ Why: sessions expired silently with no renewal path, forcing users to re-authent
 
 ## Why git trailers?
 
-Trailers are a native git mechanism — structured key-value pairs in the commit footer, parseable via `git log` without custom tooling:
+Trailers are a native git mechanism — structured key-value pairs in the commit footer. Because QAC fixes the trailer keys, the same query patterns work on any QAC-compliant repository without reading its documentation first:
 
 ```bash
 # All autonomous commits
-git log --trailer="Mode: autonomous"
+git log --grep="^Mode: autonomous" --extended-regexp
 
 # All commits by a specific agent
-git log --trailer="Agent: cursor-ai"
+git log --grep="^Agent: cursor-ai" --extended-regexp
 
 # Extract the Why from all agent commits
-git log --format="%(trailers:key=Why)"
+git log --format="%(trailers:key=Why)" | grep -v "^$"
 
 # Autonomous commits from the last month
-git log --since="1 month ago" --trailer="Mode: autonomous"
+git log --since="1 month ago" --grep="^Mode: autonomous" --extended-regexp
 ```
 
 ---
