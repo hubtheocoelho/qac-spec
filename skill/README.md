@@ -22,12 +22,6 @@ Add `skill/SKILL.md` to your project's steering, or reference it via a CLAUDE.md
 
 Add `skill/SKILL.md` as a rule file in your IDE settings.
 
-### skills.sh
-
-```bash
-npx skills add <your-github-user>/qac-spec
-```
-
 ## Usage
 
 Once installed, the skill activates automatically when the agent commits. No manual invocation required.

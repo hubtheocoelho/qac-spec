@@ -71,9 +71,19 @@ git log --since="1 month ago" --grep="^Mode: autonomous" --extended-regexp
 
 ## Quick start
 
-**Configure your agent** — add the [skill](skill/SKILL.md) to teach it to generate QAC-compliant commits automatically.
+**1. Configure your agent** — add the [skill](skill/SKILL.md) to teach it to generate QAC-compliant commits automatically.
 
-**Validate locally** — install the [commit-msg hook](enforcement/) to reject non-compliant agent commits before they land in history.
+**2. Install the enforcement hook** — run from the root of your target repository:
+
+```bash
+# Per-repo (not tracked)
+sh path/to/qac-spec/install.sh
+
+# Shared with the team (tracked in the repository)
+sh path/to/qac-spec/install.sh --shared
+```
+
+See [enforcement/README.md](enforcement/README.md) for manual installation.
 
 ---
 
@@ -84,6 +94,8 @@ git log --since="1 month ago" --grep="^Mode: autonomous" --extended-regexp
 - [Enforcement hook](enforcement/)
 - [Agent skill](skill/)
 - [Why QAC](docs/why-qac.md)
+- [Changelog](CHANGELOG.md)
+- [Contributing](CONTRIBUTING.md)
 
 ---
 
