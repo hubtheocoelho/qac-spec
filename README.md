@@ -6,7 +6,7 @@ A commit message specification for AI agent actions in code repositories.
 
 ## The problem
 
-When an AI agent makes a commit, the git history records what changed. It doesn't record which agent acted, whether a human asked or the agent decided alone, or what condition made the change necessary.
+When an AI agent makes a commit, the git history records what changed. It does not record which agent acted, whether a human asked or the agent decided alone, or what condition made the change necessary.
 
 QAC fills that gap with four trailers.
 
@@ -45,13 +45,45 @@ Why: sessions expired silently with no renewal path, forcing users to re-authent
 | **Agent** | Name of the agent that executed the commit |
 | **Mode** | `hitl` — human requested or approved · `autonomous` — agent acted without human intervention |
 | **What** | Effect of the change, not the files touched. Must be understandable without reading the diff |
-| **Why** | The condition that existed and the negative impact it caused. Commit-level granularity, not feature-level. Focus on the problem, not the solution |
+| **Why** | The condition that existed and the negative impact it caused. Commit-level granularity, not feature-level |
 
 ---
 
-## Why git trailers?
+## Quick start
 
-Trailers are a native git mechanism — structured key-value pairs in the commit footer. Because QAC fixes the trailer keys, the same query patterns work on any QAC-compliant repository without reading its documentation first:
+### 1. Install the skill
+
+Copy the provider file that matches your tool into your project:
+
+| Tool | Command |
+|------|---------|
+| **Claude Code** | add `@skill/providers/claude-code.md` to `CLAUDE.md` |
+| **Cursor** | `cp skill/providers/cursor.mdc .cursor/rules/qac-commits.mdc` |
+| **Kiro** | `cp skill/providers/kiro.md .kiro/steering/qac-commits.md` |
+| **GitHub Copilot** | `cat skill/providers/copilot.md >> .github/copilot-instructions.md` |
+| **Windsurf** | `cat skill/providers/windsurf.md >> .windsurfrules` |
+
+See [skill/README.md](skill/README.md) for full installation details.
+
+### 2. Install the enforcement hook
+
+Run from the root of your target repository:
+
+```bash
+# Per-repo (not tracked by git)
+sh path/to/qac-spec/install.sh
+
+# Shared with the team (committed to the repository)
+sh path/to/qac-spec/install.sh --shared
+```
+
+See [enforcement/README.md](enforcement/README.md) for manual installation.
+
+---
+
+## Querying
+
+QAC-compliant repositories are queryable with standard git commands. Because QAC fixes the trailer keys, the same patterns work on any compliant repository:
 
 ```bash
 # All autonomous commits
@@ -67,23 +99,7 @@ git log --format="%(trailers:key=Why)" | grep -v "^$"
 git log --since="1 month ago" --grep="^Mode: autonomous" --extended-regexp
 ```
 
----
-
-## Quick start
-
-**1. Configure your agent** — add the [skill](skill/SKILL.md) to teach it to generate QAC-compliant commits automatically.
-
-**2. Install the enforcement hook** — run from the root of your target repository:
-
-```bash
-# Per-repo (not tracked)
-sh path/to/qac-spec/install.sh
-
-# Shared with the team (tracked in the repository)
-sh path/to/qac-spec/install.sh --shared
-```
-
-See [enforcement/README.md](enforcement/README.md) for manual installation.
+**Requirements:** `%(trailers:key=K)` requires git 2.9+. `git commit --trailer=` requires git 2.32+.
 
 ---
 
@@ -91,8 +107,8 @@ See [enforcement/README.md](enforcement/README.md) for manual installation.
 
 - [Full Specification](SPECIFICATION.md)
 - [Examples](examples/)
-- [Enforcement hook](enforcement/)
 - [Agent skill](skill/)
+- [Enforcement hook](enforcement/)
 - [Why QAC](docs/why-qac.md)
 - [Changelog](CHANGELOG.md)
 - [Contributing](CONTRIBUTING.md)
