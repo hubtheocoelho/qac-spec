@@ -6,13 +6,16 @@ Teaches your AI agent to generate QAC-compliant commit messages automatically. O
 
 ### Claude Code
 
-Add to your project's `CLAUDE.md`:
+**As a native Agent Skill** (recommended) — Claude Code discovers skills in `.claude/skills/` and activates them from the `description` in the frontmatter whenever a commit is about to happen:
 
-```markdown
-@skill/providers/claude-code.md
+```bash
+mkdir -p .claude/skills/qac-commits
+cp path/to/qac-spec/skill/SKILL.md .claude/skills/qac-commits/SKILL.md
 ```
 
-Or copy the file directly into your project:
+For all your projects instead of one, install to `~/.claude/skills/qac-commits/SKILL.md`.
+
+**As an always-on rule** — copy the provider file into your project and import it from `CLAUDE.md`, so the rule is loaded in every session regardless of context:
 
 ```bash
 cp path/to/qac-spec/skill/providers/claude-code.md .claude/qac-commits.md
@@ -70,6 +73,16 @@ Append to your project's `.windsurfrules` (create it if it doesn't exist):
 cat path/to/qac-spec/skill/providers/windsurf.md >> .windsurfrules
 ```
 
+### AGENTS.md (Codex, Jules, and other compatible tools)
+
+For any tool that reads the [AGENTS.md](https://agents.md) convention, append the generic provider to your project's `AGENTS.md` (create it if it doesn't exist):
+
+```bash
+cat path/to/qac-spec/skill/providers/agents.md >> AGENTS.md
+```
+
+The file uses an `<agent name>` placeholder — replace it with your tool's name, or leave it for the agent to fill in with its own identity.
+
 ### Other agents
 
 Any agent that reads Markdown instruction files can use `skill/SKILL.md` directly — it contains the full rules in a provider-agnostic format.
@@ -78,13 +91,14 @@ Any agent that reads Markdown instruction files can use `skill/SKILL.md` directl
 
 | File | Tool | Activation |
 |------|------|------------|
-| `providers/claude-code.md` | Claude Code | via CLAUDE.md @-import |
+| `SKILL.md` | Claude Code (skill) / any | `.claude/skills/qac-commits/`, on-demand by description — also the provider-agnostic canonical |
+| `providers/claude-code.md` | Claude Code (rule) | via CLAUDE.md @-import, always loaded |
 | `providers/cursor.mdc` | Cursor (0.44+) | `.cursor/rules/`, `alwaysApply: true` |
 | `providers/cursorrules.md` | Cursor (legacy) | `.cursorrules` at project root |
 | `providers/kiro.md` | Kiro | `inclusion: always` |
 | `providers/copilot.md` | GitHub Copilot | append to copilot-instructions.md |
 | `providers/windsurf.md` | Windsurf | append to .windsurfrules |
-| `SKILL.md` | Any | provider-agnostic canonical |
+| `providers/agents.md` | AGENTS.md-compatible tools | append to AGENTS.md at project root |
 
 ## Customization
 
