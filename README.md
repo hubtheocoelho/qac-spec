@@ -36,12 +36,13 @@ All four are mandatory on every agent commit. Absence of trailers signals a huma
 
 | Tool | Step |
 |------|------|
-| **Claude Code** | add `@skill/providers/claude-code.md` to `CLAUDE.md` |
+| **Claude Code** | copy `skill/SKILL.md` → `.claude/skills/qac-commits/SKILL.md` |
 | **Cursor** (0.44+) | copy `skill/providers/cursor.mdc` → `.cursor/rules/qac-commits.mdc` |
 | **Cursor** (legacy) | copy `skill/providers/cursorrules.md` → `.cursorrules` |
 | **Kiro** | copy `skill/providers/kiro.md` → `.kiro/steering/qac-commits.md` |
 | **GitHub Copilot** | append `skill/providers/copilot.md` to `.github/copilot-instructions.md` |
 | **Windsurf** | append `skill/providers/windsurf.md` to `.windsurfrules` |
+| **AGENTS.md tools** (Codex, Jules, …) | append `skill/providers/agents.md` to `AGENTS.md` |
 
 See [skill/README.md](skill/README.md) for full details.
 

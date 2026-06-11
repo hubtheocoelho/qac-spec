@@ -2,6 +2,14 @@
 
 All notable changes to the QAC specification and tooling are documented here.
 
+## Unreleased
+
+### Tooling
+
+- `skill/providers/agents.md` — generic provider for tools that read the AGENTS.md convention (Codex, Jules, and others)
+- Claude Code installation now documented as a native Agent Skill (`.claude/skills/qac-commits/SKILL.md`), with the CLAUDE.md @-import kept as an always-on alternative
+- `enforcement/commit-msg-hook.sh` — error output now uses `printf` so missing-trailer messages render correctly when the hook runs under bash (Git Bash on Windows, macOS)
+
 ## v1.0.0 — 2026-05-23
 
 Initial release.
