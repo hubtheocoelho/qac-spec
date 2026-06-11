@@ -39,7 +39,8 @@ for trailer in Agent Mode What Why; do
 done
 
 if [ -n "$ERRORS" ]; then
-  echo "QAC: agent commit rejected — missing required trailers:$ERRORS"
+  # printf interprets \n consistently across shells; echo does not (bash vs dash)
+  printf "QAC: agent commit rejected — missing required trailers:%b\n" "$ERRORS"
   echo ""
   echo "Required format:"
   echo "  Agent: <agent name>"
