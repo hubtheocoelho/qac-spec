@@ -38,6 +38,8 @@ QAC uses git trailers — a native git mechanism for structured key-value pairs 
 
 The subject line remains unchanged, following the project's commit convention (Conventional Commits, or any other). QAC does not interfere with the subject line — the traceability trailers live exclusively in the footer.
 
+A QAC commit message contains only the subject line and the trailer block — nothing in between. The `What` and `Why` trailers replace the conventional commit body: there is no free-text paragraph between the subject and the trailers. Any reasoning that would have gone into a body belongs in `What` (the effect) and `Why` (the condition and impact), keeping the footer clean and the history uniformly queryable.
+
 ### Trailers
 
 Four mandatory trailers, in fixed order:
@@ -104,6 +106,7 @@ This avoids repetition in the history and preserves the self-contained property 
 5. Each trailer must be understandable in isolation — the reader should not need another trailer to interpret its meaning
 6. Absence of trailers indicates a human commit — no explicit marking required for manual commits
 7. Trailers are separated from the subject line by a blank line
+8. The commit message contains only the subject line and the trailer block — no body paragraph. `What` and `Why` replace the conventional body; reasoning must not be duplicated as free-text prose between the subject and the trailers
 
 ### Agent
 

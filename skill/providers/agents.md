@@ -31,4 +31,4 @@ Agents running git 2.32+ may equivalently use `git commit --trailer="Agent: ..."
 - Good: `every state change triggered immediate localStorage write causing excessive I/O syscalls during drag operations`
 - Bad: `needed to improve performance`
 
-All four trailers are mandatory. Order is fixed: Agent, Mode, What, Why. All trailer content in English. No references to external artifacts (chat sessions, local files). Each trailer must be self-contained. Why has commit-level granularity — it describes this specific commit's justification, not the card or feature goal.
+All four trailers are mandatory. Order is fixed: Agent, Mode, What, Why. The commit message contains only the subject line and the trailer block — no body paragraph between them; What and Why are the body. All trailer content in English. No references to external artifacts (chat sessions, local files). Each trailer must be self-contained. Why has commit-level granularity — it describes this specific commit's justification, not the card or feature goal.

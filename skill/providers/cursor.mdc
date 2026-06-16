@@ -31,6 +31,8 @@ What: <semantic summary of what was done>
 Why: <condition that existed + impact it caused>
 ```
 
+The commit message contains **only** the subject line and the trailer block. Do not add a body paragraph between them — `What` and `Why` are the body. Writing prose before the trailers breaks the fixed structure and pushes the trailers out of view.
+
 ## How to generate trailers
 
 **Agent** — use `cursor-ai`.
@@ -53,6 +55,7 @@ Why: <condition that existed + impact it caused>
 
 - All four trailers are mandatory on every agent commit
 - Trailer order is fixed: Agent, Mode, What, Why
+- No body paragraph — the message is the subject line plus the trailer block, nothing between them
 - All trailer content in English
 - No references to artifacts external to the repository — no chat sessions, no local plan files
 - Each trailer must be understandable in isolation
@@ -62,6 +65,7 @@ Why: <condition that existed + impact it caused>
 
 - [ ] All four trailers present
 - [ ] Mode is `hitl` or `autonomous`
+- [ ] No body paragraph between the subject and the trailers
 - [ ] What describes the effect, not the files
 - [ ] Why focuses on the problem, not the solution
 - [ ] No references to external artifacts in any trailer

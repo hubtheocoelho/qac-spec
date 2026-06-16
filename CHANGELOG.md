@@ -4,8 +4,14 @@ All notable changes to the QAC specification and tooling are documented here.
 
 ## Unreleased
 
+### Specification
+
+- Rule 8 added: the commit message contains only the subject line and the trailer block — no body paragraph. `What` and `Why` replace the conventional body, so reasoning must not be duplicated as free-text prose between the subject and the trailers
+
 ### Tooling
 
+- All skill and provider files now instruct agents to emit only the subject line and the trailer block, with no body paragraph in between — addresses agents (across models) inserting a paragraph before the trailers and pushing them out of view
+- `enforcement/commit-msg-hook.sh` — rejects agent commits that contain a body paragraph between the subject and the trailer block (git comment lines are ignored; human commits without an `Agent:` trailer are unaffected)
 - `skill/providers/agents.md` — generic provider for tools that read the AGENTS.md convention (Codex, Jules, and others)
 - Claude Code installation now documented as a native Agent Skill (`.claude/skills/qac-commits/SKILL.md`), with the CLAUDE.md @-import kept as an always-on alternative
 - `enforcement/commit-msg-hook.sh` — error output now uses `printf` so missing-trailer messages render correctly when the hook runs under bash (Git Bash on Windows, macOS)

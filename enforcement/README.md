@@ -16,6 +16,7 @@ A git hook that validates QAC trailers on agent commits before they land in hist
   - `Mode` value is `hitl` or `autonomous`
   - No trailer is empty
   - Trailer order is fixed: `Agent`, `Mode`, `What`, `Why`
+  - No body paragraph between the subject and the trailer block
 
 ## Installation via install.sh (recommended)
 
@@ -69,6 +70,10 @@ QAC: agent commit rejected — invalid Mode value: 'review'
 QAC: agent commit rejected — trailer 'What' is empty
 
 QAC: agent commit rejected — trailers must appear in fixed order: Agent, Mode, What, Why
+
+QAC: agent commit rejected — body paragraph between subject and trailers
+  The commit message must contain only the subject line and the trailer block.
+  What: and Why: replace the conventional body — do not add prose before the trailers.
 ```
 
 ## Bypassing (emergency only)

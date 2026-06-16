@@ -80,4 +80,17 @@ if [ -n "$AGENT_LINE" ] && [ -n "$MODE_LINE" ] && [ -n "$WHAT_LINE" ] && [ -n "$
   fi
 fi
 
+# Validate no body paragraph between the subject and the trailer block.
+# The message must be: subject line, blank line, trailer block — nothing else.
+# Any non-blank, non-comment line before the first trailer (Agent) is a body.
+if [ -n "$AGENT_LINE" ] && [ "$AGENT_LINE" -gt 2 ]; then
+  BODY=$(sed -n "2,$((AGENT_LINE - 1))p" "$COMMIT_MSG_FILE" | grep -vE "^[[:space:]]*$" | grep -vE "^#")
+  if [ -n "$BODY" ]; then
+    echo "QAC: agent commit rejected — body paragraph between subject and trailers"
+    echo "  The commit message must contain only the subject line and the trailer block."
+    echo "  What: and Why: replace the conventional body — do not add prose before the trailers."
+    exit 1
+  fi
+fi
+
 exit 0
