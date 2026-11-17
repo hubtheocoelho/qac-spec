@@ -92,16 +92,18 @@ The server speaks MCP over **stdio**. Point any MCP client at it.
 {
   "mcpServers": {
     "qac": {
-      "command": "npx",
-      "args": ["tsx", "/absolute/path/to/qac-spec/mcp-server/src/index.ts"]
+      "command": "/absolute/path/to/qac-spec/mcp-server/node_modules/.bin/tsx",
+      "args": ["/absolute/path/to/qac-spec/mcp-server/src/index.ts"]
     }
   }
 }
 ```
 
+Point `command` at this package's own `tsx` binary rather than `npx tsx`: the client starts the server from your repository, where `npx` would look for `tsx` and may download it from the registry.
+
 **Cursor / Windsurf** — use the same `command`/`args` shape in their MCP settings.
 
-Once connected, the agent can call `qac_commit` instead of hand-writing `git commit`, and the trailers are produced mechanically every time.
+Once connected, the agent *can* call `qac_commit` instead of hand-writing `git commit`. It is not *forced* to: with a shell it can still run `git commit` directly. To make `qac_commit` the only way to commit, install the [Claude Code lockdown profile](../enforcement/lockdown/claude-code), which removes the shell and protects git hooks, git config and the agent's own settings.
 
 ---
 
