@@ -4,6 +4,19 @@ Every commit made by an AI agent must include four trailers in the footer. Apply
 
 ## Commit structure
 
+**Via the QAC MCP server** (if `qac_commit` is available as a tool) — prefer this: it builds and validates the trailers for you.
+
+```jsonc
+qac_commit({
+  subject: "<type>(<scope>): <description>",
+  agent: "claude-code",
+  mode: "<hitl | autonomous>",
+  what: "<semantic summary of what was done>",
+  why: "<condition that existed + impact it caused>",
+  add: "all"        // optional staging
+})
+```
+
 **Via `git commit --trailer=`** (git 2.32+):
 
 ```bash

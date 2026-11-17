@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "qac": {
+      "command": "npx",
+      "args": ["tsx", "/absolute/path/to/qac-spec/mcp-server/src/index.ts"]
+    }
+  }
+}

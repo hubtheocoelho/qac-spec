@@ -1,0 +1,3 @@
+[submodule "third_party/mcp-orchestrator-sdk"]
+	path = third_party/mcp-orchestrator-sdk
+	url = https://github.com/hubtheocoelho/mcp_orchestrator_sdk
