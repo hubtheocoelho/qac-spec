@@ -31,5 +31,9 @@ export function buildOrchestrator(options: BuildOptions = {}): Orchestrator {
     orchestrator.registerTool(tool, { source: "qac" });
   }
 
+  // The workflow server drives tool calls as the caller "mcp-client"; register
+  // it as an agent allowed to call every QAC tool (no `tools` list = all).
+  void orchestrator.registerAgent({ id: "mcp-client", description: "MCP client driving QAC workflows" });
+
   return orchestrator;
 }

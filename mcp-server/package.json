@@ -12,12 +12,13 @@
     "qac-mcp-server": "./src/index.ts"
   },
   "scripts": {
+    "sdk:build": "npm --prefix ../third_party/mcp-orchestrator-sdk install && npm --prefix ../third_party/mcp-orchestrator-sdk run build",
+    "sdk:link": "node scripts/link-sdk.mjs",
+    "postinstall": "node scripts/link-sdk.mjs",
+    "setup": "npm run sdk:build && npm install && npm run sdk:link",
     "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
-    "test": "node --conditions=development --import tsx --test \"src/**/*.test.ts\""
-  },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.32.2"
+    "test": "node --import tsx --test \"src/**/*.test.ts\""
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

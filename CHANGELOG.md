@@ -6,7 +6,7 @@ All notable changes to the QAC specification and tooling are documented here.
 
 ### Tooling
 
-- `mcp-server/` — MCP server that exposes QAC as callable tools (`qac_commit`, `qac_validate`, `qac_format`, `qac_install_hook`), built on the [MCP Orchestrator SDK](https://github.com/hubtheocoelho/mcp_orchestrator_sdk) (vendored under `third_party/` as a git submodule); lets agents produce mechanically-qualified commits instead of hand-writing trailers
+- `mcp-server/` — MCP server that exposes QAC as callable tools (`qac_commit`, `qac_validate`, `qac_format`, `qac_install_hook`), built on the [MCP Orchestrator SDK](https://github.com/hubtheocoelho/mcp_orchestrator_sdk) (vendored under `third_party/` as a git submodule); lets agents produce mechanically-qualified commits instead of hand-writing trailers. Each QAC operation is a tool on an SDK `Orchestrator`, wrapped as a `WorkflowEngine` workflow and served through the SDK's own `McpWorkflowServer` — the server adds no wire plumbing of its own
 - `skill/providers/claude-code.md` — documents the `qac_commit` MCP tool as the preferred commit mechanism when the server is connected
 - `skill/providers/agents.md` — generic provider for tools that read the AGENTS.md convention (Codex, Jules, and others)
 - Claude Code installation now documented as a native Agent Skill (`.claude/skills/qac-commits/SKILL.md`), with the CLAUDE.md @-import kept as an always-on alternative

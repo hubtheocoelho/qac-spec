@@ -64,11 +64,11 @@ See [enforcement/README.md](enforcement/README.md) for manual installation.
 **3. (Optional) Run the QAC MCP server** — turns the trailers into a tool your agent can call instead of a convention it must remember:
 
 ```bash
-cd mcp-server && npm install
+cd mcp-server && npm run setup
 # then point your MCP client (Claude Code, Cursor, …) at src/index.ts
 ```
 
-The server exposes `qac_commit`, `qac_validate`, `qac_format` and `qac_install_hook` over MCP, built on the [MCP Orchestrator SDK](https://github.com/hubtheocoelho/mcp_orchestrator_sdk). A commit made through `qac_commit` is mechanically qualified and always passes the enforcement hook. See [mcp-server/README.md](mcp-server/README.md).
+The server exposes `qac_commit`, `qac_validate`, `qac_format` and `qac_install_hook` over MCP, built on the [MCP Orchestrator SDK](https://github.com/hubtheocoelho/mcp_orchestrator_sdk) — tools on an `Orchestrator`, wrapped as workflows, served by the SDK's own `McpWorkflowServer`. A commit made through `qac_commit` is mechanically qualified and always passes the enforcement hook. See [mcp-server/README.md](mcp-server/README.md).
 
 ---
 

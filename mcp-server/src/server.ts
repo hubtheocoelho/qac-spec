@@ -1,72 +1,44 @@
 /**
- * MCP wire bridge: exposes the Orchestrator's QAC tools over the Model Context
- * Protocol so any MCP client (Claude Code, Cursor, Windsurf, …) can call them.
+ * Assembles the QAC MCP server from the SDK's layers.
  *
- * The bridge is deliberately thin. Tool discovery reads the Orchestrator's tool
- * registry; tool invocation delegates to `orchestrator.callTool`, which runs the
- * SDK's validation, hooks and audit. The MCP layer never re-implements any of
- * that — it only translates JSON-RPC requests into orchestrator calls.
+ *   Orchestrator (core)      — holds the QAC tools; validation, hooks, audit.
+ *       │  ToolCaller
+ *   WorkflowEngine (workflow) — one workflow per QAC operation.
+ *       │
+ *   McpWorkflowServer (mcp-server) — exposes each workflow as an MCP tool.
+ *
+ * The MCP wire layer is the SDK's own `McpWorkflowServer`; this module only
+ * wires the three layers together. Transport (stdio / HTTP) is chosen by the
+ * caller via the SDK's `serveStdio` / `createStreamableHttpHandler`.
  */
 
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-  type CallToolResult,
-} from "@modelcontextprotocol/sdk/types.js";
-import type { Orchestrator } from "@mcp-orchestrator/core";
+import { McpWorkflowServer } from "@mcp-orchestrator/mcp-server";
+import { buildOrchestrator, type BuildOptions } from "./orchestrator.ts";
+import { buildWorkflowEngine, QAC_WORKFLOW_IDS } from "./workflows.ts";
 
 export interface ServerInfo {
   name: string;
   version: string;
 }
 
-/** Create an MCP `Server` whose tools are backed by the given orchestrator. */
-export function createMcpServer(orchestrator: Orchestrator, info: ServerInfo): Server {
-  const server = new Server(
-    { name: info.name, version: info.version },
-    { capabilities: { tools: {} } },
-  );
-
-  server.setRequestHandler(ListToolsRequestSchema, async () => ({
-    tools: orchestrator.tools.list().map((tool) => ({
-      name: tool.id,
-      description: tool.description,
-      inputSchema: tool.schema as Record<string, unknown>,
-    })),
-  }));
-
-  server.setRequestHandler(CallToolRequestSchema, async (request): Promise<CallToolResult> => {
-    const { name, arguments: args } = request.params;
-    const result = await orchestrator.callTool(name, (args ?? {}) as Record<string, never>, {
-      caller: "system",
-    });
-
-    // Transport-level failure (unknown tool, schema rejection, thrown error).
-    if (!result.ok) {
-      return {
-        content: [{ type: "text", text: `Error: ${result.error ?? "tool call failed"}` }],
-        isError: true,
-      };
-    }
-
-    // Tool-level outcome: our tools signal validation problems with `ok: false`
-    // in their output while still executing successfully.
-    const output = result.output as { ok?: boolean } | undefined;
-    const toolFailed = output !== null && typeof output === "object" && output?.ok === false;
-
-    return {
-      content: [{ type: "text", text: JSON.stringify(result.output, null, 2) }],
-      isError: toolFailed,
-    };
-  });
-
-  return server;
+export interface BuildServerResult {
+  server: McpWorkflowServer;
+  /** The exposed tool/workflow ids, for logging. */
+  workflowIds: string[];
 }
 
-/** Connect the server to stdio and run until the transport closes. */
-export async function serveStdio(server: Server): Promise<void> {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
+/** Build the fully-wired QAC MCP server (orchestrator → engine → MCP server). */
+export function buildMcpServer(info: ServerInfo, options: BuildOptions = {}): BuildServerResult {
+  const orchestrator = buildOrchestrator(options);
+  const engine = buildWorkflowEngine(orchestrator);
+  const server = new McpWorkflowServer({
+    name: info.name,
+    version: info.version,
+    engine,
+    // No workflow needs mid-run input, so keep every call a single round-trip.
+    mode: "suspend",
+    instructions:
+      "QAC (Qualified Agent Commits) tools. Use qac_commit to create commits whose footer carries the Agent, Mode, What and Why trailers; qac_validate to check a message; qac_format to preview one; qac_install_hook to install the enforcement hook.",
+  });
+  return { server, workflowIds: [...QAC_WORKFLOW_IDS] };
 }

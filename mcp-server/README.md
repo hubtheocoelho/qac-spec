@@ -4,7 +4,7 @@ An [MCP](https://modelcontextprotocol.io) server that makes **Qualified Agent Co
 
 Where the [QAC skill](../skill) *teaches* an agent to write the four trailers, this server *produces and enforces* them: the agent calls a tool, and a git commit comes out with `Agent`, `Mode`, `What` and `Why` already in the footer — validated against the same rules as the [enforcement hook](../enforcement).
 
-It is built on the [MCP Orchestrator SDK](https://github.com/hubtheocoelho/mcp_orchestrator_sdk) (vendored as a git submodule under `third_party/`). Each QAC operation is an SDK `ToolDefinition` registered on an `Orchestrator`, so every call runs through the SDK's schema validation, hook manager and audit sink before it is exposed over the MCP wire.
+It is built on the [MCP Orchestrator SDK](https://github.com/hubtheocoelho/mcp_orchestrator_sdk) (vendored as a git submodule under `third_party/`), using three of its layers: each QAC operation is an SDK `ToolDefinition` on an `Orchestrator`, wrapped as a one-step `WorkflowEngine` workflow, and exposed over MCP by the SDK's own `McpWorkflowServer`. Every call runs through the SDK's schema validation, hook manager and audit sink — this server adds no wire plumbing of its own.
 
 ---
 
@@ -58,18 +58,26 @@ Requires **Node ≥ 20** and **git ≥ 2.9** (git ≥ 2.22 for `valueonly` trail
 git clone --recurse-submodules https://github.com/hubtheocoelho/qac-spec
 # (already cloned? → git submodule update --init --recursive)
 
-# 2. Install the server's dependencies
+# 2. One-command setup: build the SDK submodule, install deps, link the SDK
 cd qac-spec/mcp-server
-npm install
+npm run setup
 ```
 
-No build step: the server runs from TypeScript source via [`tsx`](https://github.com/privatenumber/tsx), importing the SDK packages straight from the submodule.
+`npm run setup` runs three steps (also available individually):
+
+| Step | Script | What it does |
+|------|--------|--------------|
+| 1 | `npm run sdk:build` | `npm install` + `npm run build` inside the SDK submodule (produces each package's `dist/`) |
+| 2 | `npm install` | installs this server's dev dependencies |
+| 3 | `npm run sdk:link` | symlinks the built SDK packages into `node_modules/@mcp-orchestrator/*` |
+
+The SDK is a private npm-workspaces monorepo whose packages reference each other by version, so they are consumed as built packages linked from the submodule. The server itself runs from TypeScript source via [`tsx`](https://github.com/privatenumber/tsx) — no build step for this package.
 
 ### Smoke test
 
 ```bash
 npm test          # unit tests for the QAC schema logic
-npm run typecheck # type-check against the SDK source
+npm run typecheck # type-check against the SDK's built types
 ```
 
 ---
@@ -103,19 +111,23 @@ Once connected, the agent can call `qac_commit` instead of hand-writing `git com
 MCP client (Claude Code, Cursor, …)
         │  JSON-RPC over stdio
         ▼
-  src/server.ts        ← thin bridge: tools/list + tools/call
-        │  orchestrator.callTool(id, args)
+  @mcp-orchestrator/mcp-server  McpWorkflowServer + serveStdio   ← SDK's own MCP layer
+        │  engine.execute(workflowId, args)
         ▼
-  @mcp-orchestrator/core  Orchestrator
-        │  schema validation · hooks · JSONL audit (→ stderr)
+  @mcp-orchestrator/workflow    WorkflowEngine                   ← src/workflows.ts: 1 workflow per QAC op
+        │  tools.callTool(id, params)   (the Orchestrator is the ToolCaller)
         ▼
-  src/tools.ts         ← QAC ToolDefinitions
-        │  git(...) via child_process · QAC schema logic
+  @mcp-orchestrator/core        Orchestrator                     ← schema validation · hooks · JSONL audit (→ stderr)
+        │  execute(params)
+        ▼
+  src/tools.ts                  QAC ToolDefinitions              ← git(...) via child_process · QAC schema logic
         ▼
       git CLI
 ```
 
-The MCP layer never re-implements dispatch, validation or auditing — it translates protocol requests into `Orchestrator.callTool`, and the SDK does the rest. Swapping stdio for another transport, or driving the same tools from a workflow, changes nothing in `tools.ts`.
+Each QAC operation is one workflow whose single step calls the matching tool. The MCP wire layer (`tools/list`, `tools/call`, result shaping) is the SDK's `McpWorkflowServer`; this package re-implements no dispatch, validation, auditing or transport. The only glue is `src/workflows.ts` (workflow definitions) and `src/server.ts` (wiring the three layers).
+
+> The SDK's server also exposes a built-in `resume_workflow` tool used to continue workflows that pause for input. None of the QAC workflows pause, so it is never needed here — it is simply part of the SDK's server contract.
 
 ---
 

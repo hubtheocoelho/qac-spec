@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "lib": ["ES2022"],
     "types": ["node"],
     "strict": true,
@@ -11,12 +11,7 @@
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "baseUrl": ".",
-    "paths": {
-      "@mcp-orchestrator/core": ["../third_party/mcp-orchestrator-sdk/packages/core/src/index.ts"],
-      "@mcp-orchestrator/mcp": ["../third_party/mcp-orchestrator-sdk/packages/mcp/src/index.ts"]
-    }
+    "resolveJsonModule": true
   },
   "include": ["src/**/*.ts"]
 }
