@@ -100,6 +100,17 @@ Any agent that reads Markdown instruction files can use `skill/SKILL.md` directl
 | `providers/windsurf.md` | Windsurf | append to .windsurfrules |
 | `providers/agents.md` | AGENTS.md-compatible tools | append to AGENTS.md at project root |
 
+## Maintaining the skill
+
+`SKILL.md` and every file in `providers/` are generated from a single source, [`build.mjs`](build.mjs), so all tools read identical rules. To change the rules, edit `build.mjs` and regenerate:
+
+```bash
+node skill/build.mjs                 # rewrite SKILL.md and the providers
+node --test skill/build.test.mjs     # fails if any generated file was edited by hand or is stale
+```
+
+Do not edit the generated files in this repository directly: the test reports any file that differs from `build.mjs`.
+
 ## Customization
 
 Each provider file hardcodes the agent name (`cursor-ai`, `claude-code`, etc.). To use a custom agent name, edit the `Agent:` value in the provider file after copying it to your project.
