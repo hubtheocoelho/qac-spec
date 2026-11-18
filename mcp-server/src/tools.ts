@@ -236,7 +236,10 @@ const installHookTool: ToolDefinition = {
       return json({ ok: true, mode: "shared", path: ".githooks/commit-msg", note: "core.hooksPath set to .githooks (local git config); commit the file to share it." });
     }
 
-    const { stdout } = await git(["rev-parse", "--git-dir"], { cwd });
+    // `--absolute-git-dir` matters: the plain `--git-dir` answer is relative to
+    // `cwd`, and resolving it from the server's own directory put the hook in
+    // the wrong place.
+    const { stdout } = await git(["rev-parse", "--absolute-git-dir"], { cwd });
     const hooksDir = join(stdout.trim(), "hooks");
     await mkdir(hooksDir, { recursive: true });
     const dest = join(hooksDir, "commit-msg");
