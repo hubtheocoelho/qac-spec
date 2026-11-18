@@ -1,74 +1,94 @@
 # QAC Commits
 
-Every commit made by an AI agent must include four trailers in the footer. Apply this rule on every commit — do not skip for small or obvious changes.
+Every commit made by an AI agent must carry the four QAC trailers (Agent, Mode, What, Why) in its footer. Apply this on every agent commit, including small or obvious changes: a commit without trailers is read as a human commit.
 
 ## Commit structure
 
-**Via the QAC MCP server** (if `qac_commit` is available as a tool) — prefer this: it builds and validates the trailers for you.
-
-```jsonc
-qac_commit({
-  subject: "<type>(<scope>): <description>",
-  agent: "claude-code",
-  mode: "<hitl | autonomous>",
-  what: "<semantic summary of what was done>",
-  why: "<condition that existed + impact it caused>",
-  add: "all"        // optional staging
-})
-```
-
-**Via `git commit --trailer=`** (git 2.32+):
-
-```bash
-git commit -m "<type>(<scope>): <description>" \
-  --trailer="Agent: claude-code" \
-  --trailer="Mode: <hitl | autonomous>" \
-  --trailer="What: <semantic summary of what was done>" \
-  --trailer="Why: <condition that existed + impact it caused>"
-```
-
-**Via commit message text** (any git version):
+The subject line follows the repository's own commit convention (Conventional Commits or any other). QAC does not change it. The four trailers go in the footer, separated from the subject line by a blank line, in this fixed order:
 
 ```
-<type>(<scope>): <description>
+<subject line following the repository convention>
 
 Agent: claude-code
 Mode: <hitl | autonomous>
 What: <semantic summary of what was done>
-Why: <condition that existed + impact it caused>
+Why: <condition that existed + the impact it caused>
 ```
 
-## How to generate trailers
+QAC fixes the schema, not the creation mechanism. Each of these produces the same commit:
 
-**Agent** — use `claude-code`.
+- `git commit --trailer=` (git 2.32+):
 
-**Mode**:
-- `hitl` — the user requested or approved the action in an interactive session
-- `autonomous` — the agent detected the issue and acted without being asked
+  ```bash
+  git commit -m "<subject line>" \
+    --trailer="Agent: claude-code" \
+    --trailer="Mode: <hitl | autonomous>" \
+    --trailer="What: <semantic summary of what was done>" \
+    --trailer="Why: <condition that existed + the impact it caused>"
+  ```
 
-**What** — describe the effect of the change, not the files touched. One sentence, understandable without reading the diff.
+- The trailers written directly in the commit message text, as in the structure above (any git version).
+- The `qac_commit` tool of the QAC MCP server, when it is available.
 
-- Good: `add debounce to localStorage writes in useBoard hook`
-- Bad: `modify hooks/useBoard.ts`
+## Agent
 
-**Why** — state the condition that existed and the impact it caused. Focus on the problem, not the solution.
+Use `claude-code`, the configured name of the agent that executes the commit. When several agents collaborated, record the one that effectively made the commit.
 
-- Good: `every state change triggered immediate localStorage write causing excessive I/O syscalls during drag operations`
-- Bad: `needed to improve performance`
+## Mode
 
-## Rules
+- `hitl`: human-in-the-loop. The user requested or approved the action.
+- `autonomous`: the agent decided and executed the action without human intervention.
 
-- All four trailers are mandatory on every agent commit
-- Trailer order is fixed: Agent, Mode, What, Why
-- All trailer content in English
-- No references to artifacts external to the repository — no chat sessions, no local plan files
-- Each trailer must be understandable in isolation
-- Why has commit-level granularity — describes this specific commit's justification, not the card or feature goal
+Only these two values are valid. No extensions or variants.
 
-## Validation before committing
+## What
 
-- [ ] All four trailers present
-- [ ] Mode is `hitl` or `autonomous`
-- [ ] What describes the effect, not the files
-- [ ] Why focuses on the problem, not the solution
-- [ ] No references to external artifacts in any trailer
+- Describe the effect of the change, not the files touched.
+- It must be understandable without reading the diff or the subject line.
+- It complements the subject line, which is limited to 72 characters. Do not just repeat it.
+
+Good: `add debounce to localStorage writes in useBoard hook`
+Bad: `modify hooks/useBoard.ts`
+
+## Why
+
+- Unify the condition that existed and its negative impact into a single justification. It answers both "what was the situation?" and "why was that a problem?".
+- Focus on the problem, not the solution. The solution belongs in What.
+- Commit granularity, not card: justify this specific commit, not the feature or card as a whole. In a sequence of atomic commits for the same card, each commit has its own Why.
+
+Good: `every state change triggered immediate localStorage write causing excessive I/O syscalls during drag operations`
+Bad: `needed to improve performance`
+
+## Rules for every trailer
+
+- All four trailers are mandatory on every agent commit.
+- The order is fixed: Agent, Mode, What, Why.
+- All trailer content is in English, following the repository convention.
+- No trailer may reference artifacts external to the repository: personal files, chat sessions, local plans or numbered steps from them, unversioned documents.
+- Each trailer must be understandable in isolation, without needing another trailer to interpret it.
+
+## Check before every commit
+
+Re-read the message against each item. Fix it before committing if any item fails.
+
+- [ ] The subject line follows the repository convention
+- [ ] All four trailers are present, in the footer, after a blank line
+- [ ] The order is Agent, Mode, What, Why
+- [ ] Agent is the agent that effectively made the commit
+- [ ] Mode is exactly `hitl` or `autonomous`, and `hitl` only if the user requested or approved the action
+- [ ] What describes the effect, not the files, and reads without the diff or the subject line
+- [ ] Why states the condition and its impact for this commit, and does not describe the solution
+- [ ] No trailer references chat sessions, local plans, personal files or unversioned documents
+- [ ] All trailer content is in English
+- [ ] Each trailer is understandable on its own
+
+## Example
+
+```
+refactor(hooks): debounce localStorage writes in useBoard
+
+Agent: claude-code
+Mode: hitl
+What: add 300ms debounce to localStorage.setItem calls and extract load logic to separate function
+Why: every state change triggered immediate localStorage write causing excessive I/O syscalls during drag operations
+```
