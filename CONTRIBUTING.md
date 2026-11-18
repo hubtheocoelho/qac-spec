@@ -49,6 +49,8 @@ node --test skill/build.test.mjs        # skill files match skill/build.mjs
 (cd mcp-server && npm test)             # validator tests + hook/validator parity
 ```
 
+The `tests` GitHub Action (`.github/workflows/tests.yml`) runs both on every pull request and on pushes to `master`.
+
 ## Commit format
 
 Contributions to this repository follow QAC. All commits made by AI agents must include the four mandatory trailers. Human commits do not require trailers.
