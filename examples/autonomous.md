@@ -15,7 +15,7 @@ What: modify dev script to load environment variables from .env using tsx --env-
 Why: database connection required env vars to be available during development without manual export before each run
 ```
 
-## autonomous — agent decided without human input
+## auto — agent decided without human input
 
 The agent detected that a required header was missing and fixed it without being asked.
 
@@ -23,7 +23,7 @@ The agent detected that a required header was missing and fixed it without being
 fix(config): add missing content-type header to api client
 
 Agent: claude-code
-Mode: autonomous
+Mode: auto
 What: add Content-Type: application/json to all outgoing requests in api-client.ts
 Why: api client omitted content-type header, causing 415 Unsupported Media Type errors on POST endpoints with request bodies
 ```
@@ -32,11 +32,11 @@ Why: api client omitted content-type header, causing 415 Unsupported Media Type 
 
 `git blame` shows the author. If the agent commits under the developer's credentials — the default in most tools — blame cannot distinguish human from machine. And even when the agent has its own author, knowing that `claude-code` made the commit does not tell you whether it acted because the developer asked or because it decided alone.
 
-`Mode: autonomous` in the git history is a permanent, queryable record of unsupervised agent actions:
+`Mode: auto` in the git history is a permanent, queryable record of unsupervised agent actions:
 
 ```bash
 # Audit all autonomous commits in the last 30 days
-git log --since="30 days ago" --grep="^Mode: autonomous" --extended-regexp
+git log --since="30 days ago" --grep="^Mode: auto$" --extended-regexp
 ```
 
 This matters for code review, incident response, and compliance — any context where knowing the degree of human oversight changes how the change is evaluated.

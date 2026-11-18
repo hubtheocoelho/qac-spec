@@ -36,7 +36,7 @@ With the EU AI Act coming into force in 2026 and the discussion of AI governance
 
 `git blame` shows the author. But if the agent commits under the developer's credentials — which is the default in most tools — blame cannot distinguish human from machine. And even when the agent has its own author, knowing that `claude-code` made the commit does not say whether it acted because the dev asked or because it decided alone.
 
-This is the **Mode** field. Two values: `hitl` (human-in-the-loop — the human requested or approved) and `autonomous` (the agent decided and executed without intervention). It sounds simple. It is simple. And it is exactly what is missing.
+This is the **Mode** field. Two values: `hitl` (human-in-the-loop — the human requested or approved) and `auto` (autonomous: the agent decided and executed without intervention). It sounds simple. It is simple. And it is exactly what is missing.
 
 ## QAC: four trailers. Nothing more.
 
@@ -46,13 +46,13 @@ After several iterations cutting what git already provides natively (timestamp, 
 
 **Agent** — which agent executed. Identifies the tool, not the human.
 
-**Mode** — `hitl` or `autonomous`. The degree of human supervision over the action.
+**Mode** — `hitl` or `auto`. The degree of human supervision over the action.
 
 **What** — semantic summary of what was done. Exists so future agents do not need to read the entire diff to understand the change. The diff may have hundreds of lines; the What is one sentence that describes the effect.
 
 **Why** — the condition that existed and the impact it caused. Not the "why of the card" or the "why of the feature" — the why of this specific commit. In a card with 10 atomic commits, each one has its own Why, because each one resolves a different condition.
 
-The format uses git trailers — a native git mechanism for structured metadata in the commit footer. No custom parser needed, no dedicated CLI, no extension. `git log --grep="^Mode: autonomous" --extended-regexp` already filters all commits by mode of operation.
+The format uses git trailers — a native git mechanism for structured metadata in the commit footer. No custom parser needed, no dedicated CLI, no extension. `git log --grep="^Mode: auto$" --extended-regexp` already filters all commits by mode of operation.
 
 ## In practice
 
@@ -93,12 +93,12 @@ Why: delegation rules mixed with language and response logic in single block, ha
 SIM-2283 docs(steering): add inclusion mode to nexus-core frontmatter
 
 Agent: nexus-ai
-Mode: autonomous
+Mode: auto
 What: add inclusion: always to nexus-core.md frontmatter
 Why: no inclusion mode declared, IDE does not load the steering automatically without it
 ```
 
-The third commit is `autonomous` — the agent detected the missing frontmatter and fixed it without being asked. That distinction is in the history permanently.
+The third commit is `auto` — the agent detected the missing frontmatter and fixed it without being asked. That distinction is in the history permanently.
 
 ## The rules of QAC
 
@@ -117,7 +117,7 @@ Configured name of the agent. When multiple agents collaborate, record the one t
 
 ### Mode
 `hitl` — human-in-the-loop, user requested or approved the action.
-`autonomous` — agent decided and executed without human intervention.
+`auto` (autonomous) — agent decided and executed without human intervention.
 
 ### What
 Effect of the change, not files touched. Complements the subject line limited to 72 chars. Must be understandable without reading the diff.
@@ -131,7 +131,7 @@ Without additional tools:
 
 ```bash
 # All autonomous commits
-git log --grep="^Mode: autonomous" --extended-regexp
+git log --grep="^Mode: auto$" --extended-regexp
 
 # All commits from a specific agent
 git log --grep="^Agent: nexus-ai" --extended-regexp
@@ -140,7 +140,7 @@ git log --grep="^Agent: nexus-ai" --extended-regexp
 git log --format="%(trailers:key=Why)" | grep -v "^$"
 
 # Autonomous commits from the last month
-git log --since="1 month ago" --grep="^Mode: autonomous" --extended-regexp
+git log --since="1 month ago" --grep="^Mode: auto$" --extended-regexp
 ```
 
 This is what makes git trailers superior to any custom format in the body: the query already exists, it is native, and it works in any git repository without setup.

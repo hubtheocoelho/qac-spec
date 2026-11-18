@@ -1,6 +1,6 @@
 # QAC — Qualified Agent Commits
 
-![Spec](https://img.shields.io/badge/spec-v1.0.0-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Git](https://img.shields.io/badge/git-2.9%2B-lightgrey)
+![Spec](https://img.shields.io/badge/spec-v2.0.0-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Git](https://img.shields.io/badge/git-2.9%2B-lightgrey)
 
 QAC qualifies every AI agent commit with four git trailers: which agent acted, whether under human supervision, what the change accomplishes, and why it was necessary.
 
@@ -22,11 +22,13 @@ The subject line follows your project's existing convention. The trailers live i
 | Trailer | Values | Records |
 |---------|--------|---------|
 | **Agent** | agent name | which tool executed the commit |
-| **Mode** | `hitl` · `autonomous` | whether a human requested or approved the action |
+| **Mode** | `hitl` · `auto` | whether a human requested or approved the action |
 | **What** | free text | the effect of the change, without reading the diff |
 | **Why** | free text | the condition that existed and the impact it caused |
 
-All four are mandatory on every agent commit. Absence of trailers signals a human commit — no explicit marking required.
+All four are mandatory on every agent commit, each exactly once, one line each, as consecutive lines in the footer. Absence of trailers signals a human commit — no explicit marking required.
+
+> **QAC 2.0** renamed the Mode value `autonomous` to `auto`. Commits made under 1.x keep `autonomous`; see [Querying](#querying) for a pattern that matches both.
 
 ---
 
@@ -61,6 +63,15 @@ sh ~/qac-spec/install.sh --shared
 
 See [enforcement/README.md](enforcement/README.md) for manual installation.
 
+**3. (Optional) Run the QAC MCP server** — another way to create the same commit: the agent passes the four values to a tool, which writes and validates the trailers. The skill still guides what goes in them:
+
+```bash
+cd mcp-server && npm run setup
+# then point your MCP client (Claude Code, Cursor, …) at src/index.ts
+```
+
+The server exposes `qac_commit`, `qac_validate`, `qac_format` and `qac_install_hook` over MCP, built on the [MCP Orchestrator SDK](https://github.com/hubtheocoelho/mcp_orchestrator_sdk) — tools on an `Orchestrator`, wrapped as workflows, served by the SDK's own `McpWorkflowServer`. A commit made through `qac_commit` is mechanically qualified and always passes the enforcement hook. See [mcp-server/README.md](mcp-server/README.md).
+
 ---
 
 ## Querying
@@ -69,7 +80,7 @@ Because QAC fixes the trailer keys, the same query patterns work on any QAC-comp
 
 ```bash
 # All autonomous commits
-git log --grep="^Mode: autonomous" --extended-regexp
+git log --grep="^Mode: auto$" --extended-regexp
 
 # All commits by a specific agent
 git log --grep="^Agent: cursor-ai" --extended-regexp
@@ -78,7 +89,10 @@ git log --grep="^Agent: cursor-ai" --extended-regexp
 git log --format="%(trailers:key=Why)" | grep -v "^$"
 
 # Autonomous commits from the last month
-git log --since="1 month ago" --grep="^Mode: autonomous" --extended-regexp
+git log --since="1 month ago" --grep="^Mode: auto$" --extended-regexp
+
+# Autonomous commits in a history that also holds QAC 1.x commits
+git log --grep="^Mode: auto(nomous)?$" --extended-regexp
 ```
 
 `%(trailers:key=K)` requires git 2.9+. `git commit --trailer=` requires git 2.32+.
@@ -91,6 +105,7 @@ git log --since="1 month ago" --grep="^Mode: autonomous" --extended-regexp
 - [Examples](examples/)
 - [Agent skill](skill/)
 - [Enforcement hook](enforcement/)
+- [MCP server](mcp-server/)
 - [Why QAC](docs/why-qac.md)
 - [Changelog](CHANGELOG.md)
 - [Contributing](CONTRIBUTING.md)

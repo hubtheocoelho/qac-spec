@@ -1,0 +1,4 @@
+node_modules/
+*.log
+.smoke.ts
+.e2e.ts

@@ -1,6 +1,6 @@
 # QAC Enforcement — commit-msg hook
 
-A git hook that validates QAC trailers on agent commits before they land in history. Works regardless of how the trailers were created — via `git commit --trailer=` or written directly in the commit message text.
+A git hook that validates QAC 2.0 trailers on agent commits before they land in history. Works regardless of how the trailers were created — via `git commit --trailer=`, written directly in the commit message text, or through the `qac_commit` tool of the [MCP server](../mcp-server).
 
 ## Requirements
 
@@ -11,11 +11,14 @@ A git hook that validates QAC trailers on agent commits before they land in hist
 ## Behavior
 
 - If the commit has **no `Agent:` trailer**, it is treated as a human commit and passes without validation.
-- If the commit has an `Agent:` trailer, all four QAC trailers are validated:
-  - All four trailers present: `Agent`, `Mode`, `What`, `Why`
-  - `Mode` value is `hitl` or `autonomous`
+- If the commit has an `Agent:` trailer, the QAC rules are validated:
+  - `Agent`, `Mode`, `What` and `Why` present, each exactly once
+  - `Mode` value is `hitl` or `auto` (the 1.x value `autonomous` is rejected with a rename hint)
   - No trailer is empty
-  - Trailer order is fixed: `Agent`, `Mode`, `What`, `Why`
+  - The four trailers are consecutive lines in the fixed order `Agent`, `Mode`, `What`, `Why`: one line each, nothing between them
+  - They sit in the last block of the message, after a blank line; only other trailers (e.g. `Co-Authored-By`, `Signed-off-by`) may come before `Agent` or after `Why`
+- Comment lines and the scissors section that git adds when the message is written in an editor are ignored, as git ignores them when storing the message.
+- The same rules are implemented by `qac_validate` in the MCP server; `mcp-server/src/hook-parity.test.ts` checks that both reach the same verdict with the same messages.
 
 ## Installation via install.sh (recommended)
 
@@ -59,16 +62,33 @@ git config core.hooksPath .githooks
 
 ## Error messages
 
+Every problem found is listed, followed by a reminder of the required footer:
+
 ```
-QAC: agent commit rejected — missing required trailers:
-  missing trailer: Why
+QAC: agent commit rejected:
+  - invalid Mode value: 'autonomous' was renamed to 'auto' in QAC 2.0
 
-QAC: agent commit rejected — invalid Mode value: 'review'
-  Mode must be 'hitl' or 'autonomous'
+Required footer (last block of the message, one line each):
+  Agent: <agent name>
+  Mode: <hitl | auto>
+  What: <semantic summary>
+  Why: <condition + impact>
+  <optional other trailers, e.g. Co-Authored-By>
+```
 
-QAC: agent commit rejected — trailer 'What' is empty
+Other messages:
 
-QAC: agent commit rejected — trailers must appear in fixed order: Agent, Mode, What, Why
+```
+  - missing trailer: Why
+  - trailer Why appears 2 times; it must appear exactly once
+  - invalid Mode value: 'review' (must be 'hitl' or 'auto')
+  - trailer What is empty
+  - trailers must appear in fixed order: Agent, Mode, What, Why
+  - Agent, Mode, What and Why must be consecutive lines: one line each, with nothing between them
+  - the trailers must be separated from the subject line (or body) by a blank line
+  - the trailers must be the last block of the message: text found after them
+  - Why must fit on a single line: continuation line found
+  - only other trailers (e.g. Co-Authored-By) may follow Why, found: <line>
 ```
 
 ## Bypassing (emergency only)

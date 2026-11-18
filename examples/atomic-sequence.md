@@ -30,7 +30,7 @@ Why: delegation rules mixed with language and response logic in single block, ha
 CARD-1123 docs(steering): add inclusion mode to agent-core frontmatter
 
 Agent: agent-ai
-Mode: autonomous
+Mode: auto
 What: add inclusion: always to agent-core.md frontmatter
 Why: no inclusion mode declared, IDE does not load the steering automatically without it
 ```
@@ -38,6 +38,6 @@ Why: no inclusion mode declared, IDE does not load the steering automatically wi
 ## Notes
 
 - Each commit has its own Why describing the specific condition it resolves — not a repeated reference to the card goal
-- The third commit is `Mode: autonomous` — the agent detected the missing frontmatter and corrected it without being asked
+- The third commit is `Mode: auto` — the agent detected the missing frontmatter and corrected it without being asked
 - Three commits on the same card, three different justifications: this is commit-level granularity
 - A future agent reading this sequence reconstructs the full intent without reading a single diff

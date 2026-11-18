@@ -1,0 +1,40 @@
+name: tests
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  skill-sync:
+    name: Skill files match skill/build.mjs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test skill/build.test.mjs
+
+  mcp-server:
+    name: MCP server and hook parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build the SDK submodule, install and link
+        working-directory: mcp-server
+        run: npm run setup
+      - name: Typecheck
+        working-directory: mcp-server
+        run: npm run typecheck
+      - name: Validator tests and hook parity
+        working-directory: mcp-server
+        run: npm test

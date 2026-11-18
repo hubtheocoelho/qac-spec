@@ -27,7 +27,7 @@ Any commit without an Agent trailer is a human commit. Any commit with one is an
 **Audit autonomous actions:**
 
 ```bash
-git log --grep="^Mode: autonomous" --extended-regexp
+git log --grep="^Mode: auto$" --extended-regexp
 ```
 
 Returns every commit where the agent acted without being asked — detected a problem and corrected it, inferred a missing step and executed it, or completed a task outside the scope of what the user requested. This is the list your incident review starts with.
@@ -43,7 +43,7 @@ The output is a sequential record of every condition the agents identified as a 
 **Scope analysis to a time window:**
 
 ```bash
-git log --since="2 weeks ago" --grep="^Mode: autonomous" --extended-regexp \
+git log --since="2 weeks ago" --grep="^Mode: auto$" --extended-regexp \
   --format="%s%n%(trailers:key=Why)%n"
 ```
 
@@ -110,7 +110,7 @@ Why: every state change triggered immediate localStorage write causing excessive
 
 The What tells them what the change does. The Why tells them what problem it addresses. The reviewer can evaluate whether the approach is correct for the stated problem before examining the implementation. They can also verify that the problem described actually existed — `git blame` on the pre-change code, or a search through prior issues.
 
-The Mode trailer carries additional weight in review. A `hitl` commit means a human was present and directed the change. An `autonomous` commit means the agent made a judgment call. Teams can establish different review thresholds for each mode, applying stricter scrutiny to autonomous changes without blocking the entire review workflow.
+The Mode trailer carries additional weight in review. A `hitl` commit means a human was present and directed the change. An `auto` commit means the agent made a judgment call. Teams can establish different review thresholds for each mode, applying stricter scrutiny to autonomous changes without blocking the entire review workflow.
 
 ## Incident response
 
@@ -121,7 +121,7 @@ Without QAC, answering the second question on an agent-heavy repository requires
 With QAC:
 
 ```bash
-git log --since="2 weeks ago" --grep="^Mode: autonomous" --extended-regexp \
+git log --since="2 weeks ago" --grep="^Mode: auto$" --extended-regexp \
   --format="%h %s%n  Agent: %(trailers:key=Agent,valueonly)%n  Why: %(trailers:key=Why,valueonly)%n"
 ```
 
@@ -131,16 +131,16 @@ This distinction matters for two reasons. First, it narrows the search space imm
 
 ## Mode as a governance primitive
 
-The Mode trailer — `hitl` or `autonomous` — is a record of the degree of human supervision over every agent action in a repository. Over time, the ratio of `hitl` to `autonomous` commits is a quantitative signal about how the team is operating with AI.
+The Mode trailer — `hitl` or `auto` — is a record of the degree of human supervision over every agent action in a repository. Over time, the ratio of `hitl` to `auto` commits is a quantitative signal about how the team is operating with AI.
 
-A team where most agent commits are `hitl` is operating with high supervision: agents are tools executing directed tasks. A team where a significant proportion are `autonomous` is operating with higher agent initiative: agents are identifying and addressing problems independently. Neither is inherently right or wrong, but the distinction should be intentional, and it should be visible.
+A team where most agent commits are `hitl` is operating with high supervision: agents are tools executing directed tasks. A team where a significant proportion are `auto` is operating with higher agent initiative: agents are identifying and addressing problems independently. Neither is inherently right or wrong, but the distinction should be intentional, and it should be visible.
 
 ```bash
 # Supervision rate over the last quarter
 git log --since="3 months ago" --format="%(trailers:key=Mode)" | grep -v "^$" | sort | uniq -c
 ```
 
-This query produces a count of `hitl` and `autonomous` commits in any time window. Combined with `--grep="^Agent: <name>" --extended-regexp`, it breaks down supervision rate by agent.
+This query produces a count of `hitl` and `auto` commits in any time window. Combined with `--grep="^Agent: <name>" --extended-regexp`, it breaks down supervision rate by agent.
 
 The governance argument for this data is straightforward. When something goes wrong in a codebase where agents have been active, the ability to demonstrate which changes were supervised and which were not is the difference between having an audit trail and not having one. Insurance, compliance, and incident review processes increasingly require this distinction. The EU AI Act's requirements on human oversight of AI systems in professional contexts make Mode a field that will be asked for — whether or not it was captured.
 

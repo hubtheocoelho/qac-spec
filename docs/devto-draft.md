@@ -40,7 +40,7 @@ With the EU AI Act coming into force in 2026 and AI governance discussions accel
 
 The existing tooling does not record this. `git blame` shows the author, but most agents commit under the developer's credentials, making blame indistinguishable between human and agent actions. Even when an agent has its own author identity, the author field does not say whether the agent acted on a user's request or made the decision independently.
 
-The **Mode** field records this directly. Two values: `hitl` (human-in-the-loop — the user requested or approved the action) and `autonomous` (the agent decided and executed without intervention). Together with the **Agent** field identifying the specific tool, these two fields make agent actions fully attributable.
+The **Mode** field records this directly. Two values: `hitl` (human-in-the-loop — the user requested or approved the action) and `auto` (autonomous: the agent decided and executed without intervention). Together with the **Agent** field identifying the specific tool, these two fields make agent actions fully attributable.
 
 ## Design: four trailers
 
@@ -50,7 +50,7 @@ Git already provides natively: timestamp, author, diff, and the list of changed 
 
 **Agent** — which agent executed the commit. Identifies the tool, not the human operating it.
 
-**Mode** — `hitl` or `autonomous`. The degree of human supervision over the action.
+**Mode** — `hitl` or `auto`. The degree of human supervision over the action.
 
 **What** — semantic summary of the change's effect. Allows agents and reviewers to understand the change without reading the diff. The diff records which lines changed; the What records what the change accomplishes.
 
@@ -109,12 +109,12 @@ Why: delegation rules mixed with language and response logic in single block, ha
 CARD-1123 docs(steering): add inclusion mode to agent-core frontmatter
 
 Agent: claude-code
-Mode: autonomous
+Mode: auto
 What: add inclusion: always to agent-core.md frontmatter
 Why: no inclusion mode declared, IDE does not load the steering automatically without it
 ```
 
-The third commit carries `Mode: autonomous` — the agent detected the missing frontmatter and corrected it without being asked. This distinction is recorded in the history permanently and is queryable at any point.
+The third commit carries `Mode: auto` — the agent detected the missing frontmatter and corrected it without being asked. This distinction is recorded in the history permanently and is queryable at any point.
 
 ## Specification rules
 
@@ -133,7 +133,7 @@ The configured name of the agent. When multiple agents collaborate, record the o
 
 ### Mode
 `hitl` — the user requested or approved the action in an interactive session.
-`autonomous` — the agent decided and executed without human intervention.
+`auto` (autonomous) — the agent decided and executed without human intervention.
 
 ### What
 The effect of the change, not the files touched. Complements the subject line, which is limited to 72 characters. Must be understandable without reading the diff.
@@ -147,7 +147,7 @@ QAC-compliant repositories are queryable with standard git commands, without add
 
 ```bash
 # All autonomous commits
-git log --grep="^Mode: autonomous" --extended-regexp
+git log --grep="^Mode: auto$" --extended-regexp
 
 # All commits from a specific agent
 git log --grep="^Agent: claude-code" --extended-regexp
@@ -156,7 +156,7 @@ git log --grep="^Agent: claude-code" --extended-regexp
 git log --format="%(trailers:key=Why)" | grep -v "^$"
 
 # Autonomous commits from the last month
-git log --since="1 month ago" --grep="^Mode: autonomous" --extended-regexp
+git log --since="1 month ago" --grep="^Mode: auto$" --extended-regexp
 ```
 
 Teams that adopt git trailers without a shared specification produce divergent key names across repositories — `Agent`, `AI-Agent`, `by`, `authored-by`. Each divergence requires custom scripts to query. QAC eliminates that: encounter any QAC-compliant repository and the queries above work immediately.

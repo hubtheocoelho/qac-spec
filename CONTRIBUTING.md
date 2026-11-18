@@ -34,6 +34,23 @@ The specification follows semantic versioning:
 
 The current version is defined in the `## Specification` heading in [SPECIFICATION.md](SPECIFICATION.md).
 
+## Changing the rules
+
+A rule lives in several places, and they must change together:
+
+1. `SPECIFICATION.md`: the normative text.
+2. `skill/build.mjs`: the rule text every model reads. Regenerate with `node skill/build.mjs`.
+3. `enforcement/commit-msg-hook.sh` and `mcp-server/src/qac.ts`: the two validators, when the rule is checkable.
+
+Before opening a PR:
+
+```bash
+node --test skill/build.test.mjs        # skill files match skill/build.mjs
+(cd mcp-server && npm test)             # validator tests + hook/validator parity
+```
+
+The `tests` GitHub Action (`.github/workflows/tests.yml`) runs both on every pull request and on pushes to `master`.
+
 ## Commit format
 
 Contributions to this repository follow QAC. All commits made by AI agents must include the four mandatory trailers. Human commits do not require trailers.

@@ -1,0 +1,28 @@
+{
+  "name": "@qac/mcp-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MCP server that standardizes git commits with QAC (Qualified Agent Commits) trailers, built on the MCP Orchestrator SDK",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "qac-mcp-server": "./src/index.ts"
+  },
+  "scripts": {
+    "sdk:build": "npm --prefix ../third_party/mcp-orchestrator-sdk install && npm --prefix ../third_party/mcp-orchestrator-sdk run build",
+    "sdk:link": "node scripts/link-sdk.mjs",
+    "postinstall": "node scripts/link-sdk.mjs",
+    "setup": "npm run sdk:build && npm install && npm run sdk:link",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test \"src/**/*.test.ts\""
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

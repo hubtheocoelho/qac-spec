@@ -1,6 +1,6 @@
 # QAC — Qualified Agent Commits
 
-## Specification v1.0
+## Specification v2.0
 
 QAC is a commit message specification for AI agent actions in code repositories. It defines a fixed schema of four git trailers — `Agent`, `Mode`, `What`, `Why` — that qualifies each commit with traceability metadata: who executed it, under which mode of operation, what was done, and why.
 
@@ -36,7 +36,7 @@ A QAC-compliant commit fills that gap with the minimum information necessary. Be
 
 QAC uses git trailers — a native git mechanism for structured key-value pairs in the commit footer, separated from the subject line by a blank line. The specification defines exactly four trailer keys. No custom tooling is required to read or write them; they are plain text in the commit message.
 
-The subject line remains unchanged, following the project's commit convention (Conventional Commits, or any other). QAC does not interfere with the subject line — the traceability trailers live exclusively in the footer.
+The subject line remains unchanged, following the project's commit convention (Conventional Commits, or any other). QAC does not interfere with the subject line — the traceability trailers live exclusively in the footer. An optional free-form body may sit between the subject line and the footer.
 
 ### Trailers
 
@@ -45,7 +45,7 @@ Four mandatory trailers, in fixed order:
 | Trailer | Description |
 |---------|-------------|
 | **Agent** | Identification of the agent that executed the commit |
-| **Mode** | Mode of operation: `hitl` or `autonomous` |
+| **Mode** | Mode of operation: `hitl` or `auto` |
 | **What** | Semantic summary of what was done |
 | **Why** | The condition that existed and the impact that justifies the change |
 
@@ -54,15 +54,20 @@ Four mandatory trailers, in fixed order:
 ```
 <subject line following project conventions>
 
+<optional body>
+
 Agent: <agent name>
-Mode: <hitl | autonomous>
+Mode: <hitl | auto>
 What: <semantic summary>
 Why: <condition + impact>
+<optional other trailers, e.g. Co-Authored-By>
 ```
+
+The footer is the last block of the message. The four QAC trailers form a contiguous block in it, one line each; trailers outside QAC may come before `Agent` or after `Why` in the same block.
 
 ## Implementation
 
-QAC defines the schema — the four keys, their meaning, their order, and the allowed values for `Mode`. The creation mechanism is the developer's choice. Both approaches produce an identical commit object in git:
+QAC defines the schema — the four keys, their meaning, their order, and the allowed values for `Mode`. The creation mechanism is the developer's choice. Each of the following approaches produces an identical commit object in git:
 
 **Via `git commit --trailer=`** (git 2.32+) — git handles trailer formatting natively:
 
@@ -85,7 +90,19 @@ What: add POST /auth/refresh with JWT rotation and 7-day sliding window
 Why: sessions expired silently with no renewal path, forcing users to re-authenticate on every visit
 ```
 
-Both approaches produce the same trailer block in the commit footer. The enforcement hook, querying commands, and format placeholders work identically regardless of which was used.
+**Via the QAC MCP server** — an agent connected to the [MCP server](mcp-server/) in this repository calls the `qac_commit` tool with the subject line and the four values; the server writes the message in the structure above and creates the commit:
+
+```jsonc
+qac_commit({
+  "subject": "feat(auth): add token refresh endpoint",
+  "agent": "claude-code",
+  "mode": "hitl",
+  "what": "add POST /auth/refresh with JWT rotation and 7-day sliding window",
+  "why": "sessions expired silently with no renewal path, forcing users to re-authenticate on every visit"
+})
+```
+
+All three approaches produce the same trailer block in the commit footer. The enforcement hook, querying commands, and format placeholders work identically regardless of which was used.
 
 ## Granularity
 
@@ -97,13 +114,16 @@ This avoids repetition in the history and preserves the self-contained property 
 
 ### General
 
-1. The four trailers are mandatory on every commit made by an AI agent
+1. The four trailers are mandatory on every commit made by an AI agent, each exactly once
 2. Trailer order is fixed: Agent, Mode, What, Why
 3. All trailer content is in English, following the repository convention
 4. No trailer may reference artifacts external to the repository (personal files, chat sessions, local plans, unversioned documents)
 5. Each trailer must be understandable in isolation — the reader should not need another trailer to interpret its meaning
 6. Absence of trailers indicates a human commit — no explicit marking required for manual commits
-7. Trailers are separated from the subject line by a blank line
+7. Trailers are separated from the subject line by a blank line; an optional free-form body may come between them, also separated by blank lines
+8. The trailers are the last block of the message: no body text after them
+9. No trailer value may be empty, and each trailer fits on a single line — no line breaks or continuation lines
+10. Trailers outside QAC (e.g. `Co-Authored-By`, `Signed-off-by`) may appear in the same footer, before `Agent` or after `Why`. They never go between the QAC trailers, and never in the body
 
 ### Agent
 
@@ -112,9 +132,11 @@ This avoids repetition in the history and preserves the self-contained property 
 
 ### Mode
 
-- `hitl` — human-in-the-loop: user requested or approved the action
-- `autonomous` — agent decided and executed without human intervention
+- `hitl` — human-in-the-loop: a human requested or approved this change
+- `auto` — autonomous: the agent decided and executed the change without human intervention
 - Only these two values are valid; no extensions or variants
+- Mode qualifies the change in the commit, not the session that produced it. In a scheduled or triggered run (CI job, cron, bot), the commit is `hitl` only when a human requested that specific change — for example by assigning an issue that names it — or approved it before it was committed. A schedule or trigger that leaves the change to the agent, such as a recurring maintenance job, is not a request: its commits are `auto`
+- Versions 1.x used the value `autonomous`; since 2.0 it is `auto`. Commits made under 1.x keep their original value — history is not rewritten
 
 ### What
 
@@ -138,7 +160,7 @@ The portability guarantee comes from the schema, not from a dedicated git featur
 
 ```bash
 # All autonomous commits
-git log --grep="^Mode: autonomous" --extended-regexp
+git log --grep="^Mode: auto$" --extended-regexp
 
 # All commits from a specific agent
 git log --grep="^Agent: agent-ai" --extended-regexp
@@ -147,7 +169,10 @@ git log --grep="^Agent: agent-ai" --extended-regexp
 git log --format="%(trailers:key=Why)" | grep -v "^$"
 
 # Autonomous commits from the last month
-git log --since="1 month ago" --grep="^Mode: autonomous" --extended-regexp
+git log --since="1 month ago" --grep="^Mode: auto$" --extended-regexp
+
+# Autonomous commits across a history that also holds 1.x commits
+git log --grep="^Mode: auto(nomous)?$" --extended-regexp
 ```
 
 Teams that adopt git trailers without a schema standard produce divergent key names across repositories. QAC eliminates that divergence: the keys are defined by the spec, not by each team independently. A developer or agent encountering a QAC-compliant repository for the first time can query it immediately, without reading its documentation.
@@ -180,7 +205,7 @@ Why: delegation rules mixed with language and response logic in single block, ha
 CARD-1123 docs(steering): add inclusion mode to agent-core frontmatter
 
 Agent: agent-ai
-Mode: autonomous
+Mode: auto
 What: add inclusion: always to agent-core.md frontmatter
 Why: no inclusion mode declared, IDE does not load the steering automatically without it
 ```
