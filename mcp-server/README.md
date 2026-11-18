@@ -17,7 +17,7 @@ It is built on the [MCP Orchestrator SDK](https://github.com/hubtheocoelho/mcp_o
 | **`qac_commit`** | write | Stage (optional) and create a commit whose footer carries the four QAC trailers. |
 | **`qac_install_hook`** | write | Install the QAC enforcement `commit-msg` hook into a repository (local or shared). |
 
-### `qac_commit` — the primary tool
+### `qac_commit`
 
 ```jsonc
 {
@@ -25,9 +25,10 @@ It is built on the [MCP Orchestrator SDK](https://github.com/hubtheocoelho/mcp_o
   "arguments": {
     "subject": "feat(auth): add token refresh endpoint",
     "agent": "claude-code",
-    "mode": "hitl",                     // hitl | autonomous
+    "mode": "hitl",                     // hitl | auto
     "what": "add POST /auth/refresh with JWT rotation and 7-day sliding window",
     "why": "sessions expired silently with no renewal path, forcing re-auth on every visit",
+    "trailers": ["Co-Authored-By: Jane Doe <jane@example.com>"],  // optional, placed after Why
     "cwd": "/path/to/repo",             // optional, defaults to server cwd
     "add": "all"                        // "all" | ["path/a", "path/b"] | omit
   }
@@ -43,9 +44,10 @@ Agent: claude-code
 Mode: hitl
 What: add POST /auth/refresh with JWT rotation and 7-day sliding window
 Why: sessions expired silently with no renewal path, forcing re-auth on every visit
+Co-Authored-By: Jane Doe <jane@example.com>
 ```
 
-A commit produced by `qac_commit` always passes `qac_validate` and the enforcement hook.
+A commit produced by `qac_commit` always passes `qac_validate` and the enforcement hook. Both apply the QAC 2.0 rules with the same messages: `src/hook-parity.test.ts` runs them over a shared set of messages.
 
 ---
 

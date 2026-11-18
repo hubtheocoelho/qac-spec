@@ -1,18 +1,21 @@
 /**
- * QAC (Qualified Agent Commits) schema logic — formatting and validation.
+ * QAC (Qualified Agent Commits) schema logic — formatting and validation, QAC 2.0.
  *
- * This module is the single source of truth for the four-trailer schema inside
- * the server. It mirrors SPECIFICATION.md and enforcement/commit-msg-hook.sh so
- * that a commit produced by `qac_commit` always passes `qac_validate` and the
- * repository's commit-msg hook.
+ * This module is the single source of truth for the schema inside the server.
+ * It mirrors SPECIFICATION.md and enforcement/commit-msg-hook.sh rule for rule
+ * (hook-parity.test.ts runs both over the same messages), so a commit produced
+ * by `qac_commit` always passes `qac_validate` and the repository's hook.
  */
 
 /** The four QAC trailer keys, in their fixed, mandatory order. */
 export const QAC_TRAILER_ORDER = ["Agent", "Mode", "What", "Why"] as const;
 
 /** Allowed values for the `Mode` trailer. */
-export const QAC_MODES = ["hitl", "autonomous"] as const;
+export const QAC_MODES = ["hitl", "auto"] as const;
 export type QacMode = (typeof QAC_MODES)[number];
+
+/** The `Mode` value used by QAC 1.x, renamed to `auto` in 2.0. */
+const LEGACY_AUTONOMOUS = "autonomous";
 
 export interface QacTrailers {
   agent: string;
@@ -26,6 +29,8 @@ export interface QacCommitInput extends QacTrailers {
   subject: string;
   /** Optional free-form body paragraph(s), placed between subject and trailers. */
   body?: string;
+  /** Optional trailers outside QAC (e.g. `Co-Authored-By: Name <mail>`), placed after Why. */
+  trailers?: string[];
 }
 
 export interface QacValidationError {
@@ -40,101 +45,137 @@ export interface QacValidationResult {
   errors: QacValidationError[];
 }
 
-const TRAILER_LINE = (key: string) => new RegExp(`^${key}:[ \\t]*(.*)$`);
+/** A trailer line outside QAC: `Key: value`, with a git-style token as key. */
+const OTHER_TRAILER = /^[A-Za-z0-9-]+:\s*\S/;
 
 /**
- * Build a full commit message string from a subject, optional body and the four
- * QAC trailers. The trailer block is separated from the preceding content by a
- * blank line, exactly as git trailers require.
+ * Build a full commit message: subject, optional body, the four QAC trailers as
+ * the opening lines of the footer, then any other trailers. Each trailer value
+ * is collapsed onto a single line.
  */
 export function formatCommitMessage(input: QacCommitInput): string {
-  const subject = input.subject.trim();
-  const parts: string[] = [subject];
+  const parts: string[] = [input.subject.trim()];
 
   const body = input.body?.trim();
   if (body) parts.push(body);
 
-  const trailerBlock = [
-    `Agent: ${input.agent.trim()}`,
+  const footer = [
+    `Agent: ${collapse(input.agent)}`,
     `Mode: ${input.mode}`,
     `What: ${collapse(input.what)}`,
     `Why: ${collapse(input.why)}`,
-  ].join("\n");
+    ...(input.trailers ?? []).map(collapse),
+  ];
 
-  parts.push(trailerBlock);
+  parts.push(footer.join("\n"));
   return parts.join("\n\n") + "\n";
 }
 
-/** Collapse interior newlines/whitespace so a trailer stays on a single line. */
+/** Collapse interior newlines/whitespace so a value stays on a single line. */
 function collapse(value: string): string {
   return value.replace(/\s+/g, " ").trim();
 }
 
-function trailerValue(message: string, key: string): string | undefined {
+/**
+ * The message as git stores it: comment lines and everything below the
+ * scissors line removed, as git does for messages written in an editor.
+ */
+function storedLines(message: string, commentChar = "#"): string[] {
+  const lines: string[] = [];
   for (const line of message.split(/\r?\n/)) {
-    const m = line.match(TRAILER_LINE(key));
-    if (m) return m[1];
+    if (line.startsWith(`${commentChar} ------------------------ >8 ------------------------`)) break;
+    if (line.startsWith(commentChar)) continue;
+    lines.push(line);
   }
-  return undefined;
+  while (lines.length > 0 && /^[ \t]*$/.test(lines[lines.length - 1])) lines.pop();
+  return lines;
 }
 
-function trailerLineNumber(message: string, key: string): number | undefined {
-  const lines = message.split(/\r?\n/);
-  for (let i = 0; i < lines.length; i++) {
-    if (TRAILER_LINE(key).test(lines[i])) return i + 1;
-  }
-  return undefined;
-}
+const isBlank = (line: string) => /^[ \t]*$/.test(line);
 
 /**
  * Validate a raw commit message against the QAC schema.
  *
- * Semantics match the enforcement hook: a message without an `Agent:` trailer
- * is a human commit and passes untouched. A message with `Agent:` must carry
- * all four trailers, a valid `Mode`, non-empty `Agent`/`What`/`Why`, and the
- * trailers must appear in the fixed order.
+ * A message without an `Agent:` trailer is a human commit and passes untouched.
+ * Otherwise every rule of the enforcement hook applies; error paths and
+ * messages match the hook's.
  */
 export function validateCommitMessage(message: string): QacValidationResult {
-  const errors: QacValidationError[] = [];
-  const hasAgent = trailerLineNumber(message, "Agent") !== undefined;
+  const lines = storedLines(message);
+  const pos: Record<string, number> = {};
+  const value: Record<string, string> = {};
+  const count: Record<string, number> = { Agent: 0, Mode: 0, What: 0, Why: 0 };
 
-  if (!hasAgent) {
+  lines.forEach((line, i) => {
+    for (const key of QAC_TRAILER_ORDER) {
+      if (line.startsWith(`${key}:`)) {
+        count[key]++;
+        pos[key] = i + 1;
+        value[key] = line.slice(key.length + 1).trim();
+      }
+    }
+  });
+
+  if (count.Agent === 0) {
     return { valid: true, isAgentCommit: false, errors: [] };
   }
 
-  // 1. All four trailers present.
+  const errors: QacValidationError[] = [];
+  const fail = (path: string, msg: string) => errors.push({ path, message: msg });
+
   for (const key of QAC_TRAILER_ORDER) {
-    if (trailerLineNumber(message, key) === undefined) {
-      errors.push({ path: key, message: `missing trailer: ${key}` });
-    }
+    if (count[key] === 0) fail(key, `missing trailer: ${key}`);
+    else if (count[key] > 1) fail(key, `trailer ${key} appears ${count[key]} times; it must appear exactly once`);
+  }
+  if (errors.length > 0) return { valid: false, isAgentCommit: true, errors };
+
+  if (value.Mode === LEGACY_AUTONOMOUS) {
+    fail("Mode", "invalid Mode value: 'autonomous' was renamed to 'auto' in QAC 2.0");
+  } else if (!(QAC_MODES as readonly string[]).includes(value.Mode)) {
+    fail("Mode", `invalid Mode value: '${value.Mode}' (must be 'hitl' or 'auto')`);
   }
 
-  // 2. Mode is one of the allowed values.
-  const mode = trailerValue(message, "Mode");
-  if (mode !== undefined && !(QAC_MODES as readonly string[]).includes(mode.trim())) {
-    errors.push({
-      path: "Mode",
-      message: `invalid Mode value: '${mode.trim()}' (must be 'hitl' or 'autonomous')`,
-    });
-  }
-
-  // 3. Agent / What / Why are non-empty.
   for (const key of ["Agent", "What", "Why"] as const) {
-    const value = trailerValue(message, key);
-    if (value !== undefined && value.trim() === "") {
-      errors.push({ path: key, message: `trailer '${key}' is empty` });
-    }
+    if (value[key] === "") fail(key, `trailer ${key} is empty`);
   }
 
-  // 4. Fixed trailer order: Agent < Mode < What < Why.
-  const lines = QAC_TRAILER_ORDER.map((k) => trailerLineNumber(message, k));
-  if (lines.every((n) => n !== undefined)) {
-    const [a, m, w, y] = lines as number[];
-    if (a > m || m > w || w > y) {
-      errors.push({
-        path: "order",
-        message: "trailers must appear in fixed order: Agent, Mode, What, Why",
-      });
+  const { Agent: a, Mode: m, What: w, Why: y } = pos;
+  if (a > m || m > w || w > y) {
+    fail("order", "trailers must appear in fixed order: Agent, Mode, What, Why");
+  } else if (m !== a + 1 || w !== m + 1 || y !== w + 1) {
+    fail("order", "Agent, Mode, What and Why must be consecutive lines: one line each, with nothing between them");
+  }
+
+  // Walk back from Agent to the blank line that opens the footer: only other
+  // trailers (e.g. a Signed-off-by added by git -s) may precede it.
+  let s = a - 1;
+  let bad = false;
+  while (s >= 1 && !isBlank(lines[s - 1])) {
+    const line = lines[s - 1];
+    if (!/^[A-Za-z0-9-]+:/.test(line) && !/^[ \t]/.test(line)) {
+      bad = true;
+      break;
+    }
+    s--;
+  }
+  if (bad || s < 2) {
+    fail("footer", "the trailers must be separated from the subject line (or body) by a blank line");
+  }
+
+  for (let j = y + 1; j <= lines.length; j++) {
+    const line = lines[j - 1];
+    if (isBlank(line)) {
+      fail("footer", "the trailers must be the last block of the message: text found after them");
+      break;
+    }
+    if (j === y + 1 && /^[ \t]/.test(line)) {
+      fail("Why", "Why must fit on a single line: continuation line found");
+      break;
+    }
+    if (/^[ \t]/.test(line)) continue;
+    if (!/^[A-Za-z0-9-]+:/.test(line)) {
+      fail("footer", `only other trailers (e.g. Co-Authored-By) may follow Why, found: ${line}`);
+      break;
     }
   }
 
@@ -152,14 +193,31 @@ export function validateCommitInput(input: Partial<QacCommitInput>): QacValidati
   if (!input.agent || input.agent.trim() === "") {
     errors.push({ path: "agent", message: "agent is required and must be non-empty" });
   }
-  if (!input.mode || !(QAC_MODES as readonly string[]).includes(input.mode)) {
-    errors.push({ path: "mode", message: "mode is required and must be 'hitl' or 'autonomous'" });
+  if ((input.mode as string | undefined) === LEGACY_AUTONOMOUS) {
+    errors.push({ path: "mode", message: "'autonomous' was renamed to 'auto' in QAC 2.0; use 'auto'" });
+  } else if (!input.mode || !(QAC_MODES as readonly string[]).includes(input.mode)) {
+    errors.push({ path: "mode", message: "mode is required and must be 'hitl' or 'auto'" });
   }
   if (!input.what || input.what.trim() === "") {
     errors.push({ path: "what", message: "what is required and must be non-empty" });
   }
   if (!input.why || input.why.trim() === "") {
     errors.push({ path: "why", message: "why is required and must be non-empty" });
+  }
+  if (input.trailers !== undefined) {
+    if (!Array.isArray(input.trailers)) {
+      errors.push({ path: "trailers", message: "trailers must be an array of 'Key: value' strings" });
+    } else {
+      input.trailers.forEach((t, i) => {
+        const line = typeof t === "string" ? collapse(t) : "";
+        const key = line.split(":")[0];
+        if (!OTHER_TRAILER.test(line)) {
+          errors.push({ path: `trailers.${i}`, message: `not a 'Key: value' trailer: ${String(t)}` });
+        } else if ((QAC_TRAILER_ORDER as readonly string[]).includes(key)) {
+          errors.push({ path: `trailers.${i}`, message: `${key} is a QAC trailer; pass it as its own field` });
+        }
+      });
+    }
   }
   return errors;
 }

@@ -26,10 +26,11 @@ const commitInputs = {
     description: "Subject line following the repository's own convention (e.g. Conventional Commits). Single line, ideally <= 72 chars.",
   },
   agent: { type: "string" as const, required: true, description: "Name of the agent executing the commit, e.g. 'claude-code'." },
-  mode: { type: "string" as const, required: true, description: `Operation mode: ${MODE_HINT}. 'hitl' = user requested/approved, 'autonomous' = agent decided alone.` },
+  mode: { type: "string" as const, required: true, description: `Operation mode: ${MODE_HINT}. 'hitl' when a human requested or approved this change, 'auto' when the agent decided and executed it without human intervention. A scheduled or triggered run is 'hitl' only if a human requested this specific change.` },
   what: { type: "string" as const, required: true, description: "Semantic summary of the effect of the change, understandable without reading the diff." },
   why: { type: "string" as const, required: true, description: "The condition that existed and the impact it caused — the problem, not the solution." },
   body: { type: "string" as const, required: false, description: "Optional free-form body paragraph(s), placed between the subject and the trailer block." },
+  trailers: { type: "array" as const, required: false, description: "Optional trailers outside QAC, e.g. 'Co-Authored-By: Name <email>', placed in the footer after Why. One 'Key: value' per entry." },
 };
 
 /** Params object forwarding every commit field from workflow input to the tool. */
@@ -40,6 +41,7 @@ const commitParams = {
   what: "${input.what}",
   why: "${input.why}",
   body: "${input.body}",
+  trailers: "${input.trailers}",
 };
 
 const SURFACE_OUTPUT = { result: "${steps.run.output}" } as const;

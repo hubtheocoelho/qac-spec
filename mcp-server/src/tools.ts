@@ -52,7 +52,7 @@ const commitFields: Record<string, JsonSchema> = {
   mode: {
     type: "string",
     enum: [...QAC_MODES],
-    description: "'hitl' when the user requested/approved the action, 'autonomous' when the agent decided on its own.",
+    description: "'hitl' when a human requested or approved this change, 'auto' when the agent decided and executed it without human intervention. A scheduled or triggered run is 'hitl' only if a human requested this specific change.",
   },
   what: {
     type: "string",
@@ -61,6 +61,11 @@ const commitFields: Record<string, JsonSchema> = {
   why: {
     type: "string",
     description: "The condition that existed and the impact it caused — the problem, not the solution.",
+  },
+  trailers: {
+    type: "array",
+    items: { type: "string" },
+    description: "Optional trailers outside QAC, e.g. 'Co-Authored-By: Name <email>', placed in the footer after Why. One 'Key: value' per entry.",
   },
   body: {
     type: "string",
@@ -83,6 +88,7 @@ const formatTool: ToolDefinition = {
       what: commitFields.what,
       why: commitFields.why,
       body: commitFields.body,
+      trailers: commitFields.trailers,
     },
     required: ["subject", "agent", "mode", "what", "why"],
   },
@@ -98,6 +104,7 @@ const formatTool: ToolDefinition = {
       what: str(params, "what")!,
       why: str(params, "why")!,
       body: str(params, "body"),
+      trailers: Array.isArray(params["trailers"]) ? params["trailers"].map(String) : undefined,
     });
     return json({ ok: true, message });
   },
@@ -147,6 +154,7 @@ const commitTool: ToolDefinition = {
       what: commitFields.what,
       why: commitFields.why,
       body: commitFields.body,
+      trailers: commitFields.trailers,
       cwd: { type: "string", description: "Repository working directory (default: server process cwd)." },
       add: {
         description:
@@ -182,6 +190,7 @@ const commitTool: ToolDefinition = {
       what: str(params, "what")!,
       why: str(params, "why")!,
       body: str(params, "body"),
+      trailers: Array.isArray(params["trailers"]) ? params["trailers"].map(String) : undefined,
     });
 
     // Write the message to a temp file and commit with -F so the stored object
