@@ -1,8 +1,8 @@
 # QAC MCP Server
 
-An [MCP](https://modelcontextprotocol.io) server that makes **Qualified Agent Commits** a *capability* your agent can call, not just a convention it has to remember.
+An [MCP](https://modelcontextprotocol.io) server that creates **Qualified Agent Commits** through a tool call. It is one more creation mechanism next to `git commit --trailer=` and plain message text: the spec fixes the schema and leaves the mechanism to you.
 
-Where the [QAC skill](../skill) *teaches* an agent to write the four trailers, this server *produces and enforces* them: the agent calls a tool, and a git commit comes out with `Agent`, `Mode`, `What` and `Why` already in the footer — validated against the same rules as the [enforcement hook](../enforcement).
+The agent passes the four values to `qac_commit`, and a git commit comes out with `Agent`, `Mode`, `What` and `Why` in the footer, validated against the same rules as the [enforcement hook](../enforcement). The tool checks the structure only. What goes into `What` and `Why` still comes from the agent, guided by the [QAC skill](../skill).
 
 It is built on the [MCP Orchestrator SDK](https://github.com/hubtheocoelho/mcp_orchestrator_sdk) (vendored as a git submodule under `third_party/`), using three of its layers: each QAC operation is an SDK `ToolDefinition` on an `Orchestrator`, wrapped as a one-step `WorkflowEngine` workflow, and exposed over MCP by the SDK's own `McpWorkflowServer`. Every call runs through the SDK's schema validation, hook manager and audit sink — this server adds no wire plumbing of its own.
 
@@ -103,7 +103,7 @@ Point `command` at this package's own `tsx` binary rather than `npx tsx`: the cl
 
 **Cursor / Windsurf** — use the same `command`/`args` shape in their MCP settings.
 
-Once connected, the agent *can* call `qac_commit` instead of hand-writing `git commit`. It is not *forced* to: with a shell it can still run `git commit` directly. To make `qac_commit` the only way to commit, install the [Claude Code lockdown profile](../enforcement/lockdown/claude-code), which removes the shell and protects git hooks, git config and the agent's own settings.
+Once connected, the agent can call `qac_commit` as one way to create a QAC commit. The spec leaves the creation mechanism to the developer, so `git commit --trailer=` and plain message text remain equally valid. Install the [QAC skill](../skill) alongside the server: the tool guarantees the structure, while the skill guides the content of `What` and `Why`.
 
 ---
 

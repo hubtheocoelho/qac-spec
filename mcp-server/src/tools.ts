@@ -136,7 +136,7 @@ const validateTool: ToolDefinition = {
 const commitTool: ToolDefinition = {
   id: "qac_commit",
   description:
-    "Create a git commit whose footer carries the four mandatory QAC trailers (Agent, Mode, What, Why). Optionally stages files first. The resulting commit passes qac_validate and the QAC enforcement hook. This is the primary way for an agent to produce a standardized commit.",
+    "Create a git commit whose footer carries the four mandatory QAC trailers (Agent, Mode, What, Why). Optionally stages files first. The resulting commit passes qac_validate and the QAC enforcement hook.",
   safety: "write",
   schema: {
     type: "object",

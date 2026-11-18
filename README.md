@@ -61,7 +61,7 @@ sh ~/qac-spec/install.sh --shared
 
 See [enforcement/README.md](enforcement/README.md) for manual installation.
 
-**3. (Optional) Run the QAC MCP server** — turns the trailers into a tool your agent can call instead of a convention it must remember:
+**3. (Optional) Run the QAC MCP server** — another way to create the same commit: the agent passes the four values to a tool, which writes and validates the trailers. The skill still guides what goes in them:
 
 ```bash
 cd mcp-server && npm run setup
@@ -69,14 +69,6 @@ cd mcp-server && npm run setup
 ```
 
 The server exposes `qac_commit`, `qac_validate`, `qac_format` and `qac_install_hook` over MCP, built on the [MCP Orchestrator SDK](https://github.com/hubtheocoelho/mcp_orchestrator_sdk) — tools on an `Orchestrator`, wrapped as workflows, served by the SDK's own `McpWorkflowServer`. A commit made through `qac_commit` is mechanically qualified and always passes the enforcement hook. See [mcp-server/README.md](mcp-server/README.md).
-
-**4. (Optional) Lock the agent down to the MCP server** — for Claude Code, a profile that removes the shell and protects git hooks, git config and the agent's own settings, so `qac_commit` is the only way the agent can commit:
-
-```bash
-sh ~/qac-spec/enforcement/lockdown/claude-code/install.sh
-```
-
-See [enforcement/lockdown/claude-code](enforcement/lockdown/claude-code) for what it blocks and what it does not cover.
 
 ---
 
@@ -109,7 +101,6 @@ git log --since="1 month ago" --grep="^Mode: autonomous" --extended-regexp
 - [Agent skill](skill/)
 - [Enforcement hook](enforcement/)
 - [MCP server](mcp-server/)
-- [Claude Code lockdown](enforcement/lockdown/claude-code/)
 - [Why QAC](docs/why-qac.md)
 - [Changelog](CHANGELOG.md)
 - [Contributing](CONTRIBUTING.md)

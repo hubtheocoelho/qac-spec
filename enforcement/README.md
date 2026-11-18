@@ -8,8 +8,6 @@ A git hook that validates QAC trailers on agent commits before they land in hist
 - **Windows:** Git Bash (included in Git for Windows) or WSL — both the install script and the hook require a POSIX shell. The hook itself runs automatically through Git for Windows' bundled `sh.exe` once installed.
 - **git:** 2.9+
 
-> **Limits:** the hook only sees commits that carry an `Agent:` trailer, runs only where it is installed, and is skipped by `git commit --no-verify`. An agent with a shell can therefore commit without trailers. To make the QAC MCP server the agent's only way to commit, use the [Claude Code lockdown profile](lockdown/claude-code).
-
 ## Behavior
 
 - If the commit has **no `Agent:` trailer**, it is treated as a human commit and passes without validation.
